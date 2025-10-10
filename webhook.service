@@ -1,0 +1,19 @@
+[Unit]
+Description=GitHub Webhook Server for Trading Agent
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/trading-agent
+Environment=PATH=/opt/trading-agent/venv/bin
+Environment=WEBHOOK_PORT=8080
+Environment=GITHUB_WEBHOOK_SECRET=your_webhook_secret_here
+ExecStart=/opt/trading-agent/venv/bin/python scripts/webhook_server.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
