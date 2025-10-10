@@ -1,0 +1,76 @@
+# Multi-Symbol Trading Configuration
+# Supports SPY, QQQ, IWM, DIA, and sector ETFs
+
+symbols:
+  # Major Indexes
+  - symbol: SPY
+    name: "S&P 500 ETF"
+    enabled: true
+    max_positions: 3
+    strategies: [bull_put_spread, iron_condor, bear_call_spread]
+    
+  - symbol: QQQ
+    name: "Nasdaq 100 ETF"
+    enabled: true
+    max_positions: 3
+    strategies: [bull_put_spread, iron_condor, bear_call_spread]
+    
+  - symbol: IWM
+    name: "Russell 2000 ETF"
+    enabled: true
+    max_positions: 2
+    strategies: [bull_put_spread, iron_condor]
+    
+  - symbol: DIA
+    name: "Dow Jones ETF"
+    enabled: true
+    max_positions: 2
+    strategies: [bull_put_spread, iron_condor]
+  
+  # Sector ETFs
+  - symbol: XLF
+    name: "Financial Sector"
+    enabled: false
+    max_positions: 1
+    strategies: [bull_put_spread]
+    
+  - symbol: XLE
+    name: "Energy Sector"
+    enabled: false
+    max_positions: 1
+    strategies: [bull_put_spread]
+    
+  - symbol: XLK
+    name: "Technology Sector"
+    enabled: false
+    max_positions: 1
+    strategies: [bull_put_spread]
+
+# Symbol-specific parameters
+symbol_params:
+  SPY:
+    min_iv_rank: 50
+    target_delta: 0.30
+    width: 5.0
+    
+  QQQ:
+    min_iv_rank: 50
+    target_delta: 0.30
+    width: 5.0
+    
+  IWM:
+    min_iv_rank: 55  # Higher threshold for small caps
+    target_delta: 0.28  # More conservative
+    width: 3.0  # Narrower spreads
+    
+  DIA:
+    min_iv_rank: 50
+    target_delta: 0.30
+    width: 5.0
+
+# Diversification rules
+diversification:
+  max_correlation: 0.80  # Max correlation between positions
+  min_symbols: 2  # Minimum number of different symbols
+  max_per_symbol_pct: 0.30  # Max 30% of capital per symbol
+
