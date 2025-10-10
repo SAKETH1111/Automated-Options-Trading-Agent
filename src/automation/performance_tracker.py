@@ -5,7 +5,7 @@ Track real-time P&L and generate performance reports
 
 import pandas as pd
 import numpy as np
-from typing import Dict, List
+from typing import Dict, List, Optional
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import func
