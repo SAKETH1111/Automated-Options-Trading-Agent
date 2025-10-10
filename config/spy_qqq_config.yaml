@@ -1,0 +1,246 @@
+# 📊 SPY & QQQ Specialized Trading Configuration
+# Optimized for highly liquid index ETF options trading
+
+trading:
+  mode: paper
+  market_hours:
+    start: "09:30"
+    end: "16:00"
+    timezone: "America/New_York"
+  
+  # Risk Management (Conservative for indices)
+  risk:
+    max_daily_loss_pct: 3.0  # More conservative for indices
+    max_position_size_pct: 15.0  # Slightly smaller per position
+    max_trades_per_day: 6  # Higher volume possible with liquid indices
+    max_positions_per_symbol: 3  # Can handle more SPY/QQQ positions
+    stop_loss_pct: 50
+    take_profit_pct: 50
+    max_portfolio_heat: 25.0  # Conservative total risk
+
+  # Position Sizing
+  position_sizing:
+    default_contracts: 1
+    min_account_balance: 10000
+    kelly_criterion: false
+    fixed_risk_per_trade_pct: 1.0
+
+# Market Scanning - SPY & QQQ ONLY
+scanning:
+  # Only trade SPY and QQQ
+  watchlist:
+    - SPY  # S&P 500 ETF
+    - QQQ  # Nasdaq-100 ETF
+  
+  # Index-specific filters (very liquid)
+  min_stock_price: 200  # Both trade above this
+  max_stock_price: 600
+  min_avg_volume: 50000000  # Ultra-high volume
+  min_market_cap: 100000000000  # $100B+ (irrelevant for ETFs but keeping)
+  
+  # Options filters (ultra-liquid for indices)
+  min_open_interest: 500  # Higher for SPY/QQQ
+  min_volume: 200  # Higher daily volume
+  max_bid_ask_spread_pct: 5.0  # Tighter spreads
+  
+  # IV Environment
+  min_iv_rank: 20  # Can trade lower IV with indices
+  max_iv_rank: 95
+
+# ========================================
+# SPECIALIZED STRATEGIES FOR SPY & QQQ
+# ========================================
+
+strategies:
+  # Strategy 1: SPY/QQQ Bull Put Spread (Primary)
+  spy_qqq_bull_put_spread:
+    enabled: true
+    dte_range: [30, 45]  # 30-45 DTE sweet spot
+    short_delta_range: [-0.25, -0.20]  # 20-25 delta short puts
+    width_range: [5, 10, 15]  # Flexible widths for SPY/QQQ
+    min_credit: 0.40  # Higher minimum for indices
+    max_risk_reward: 3.5  # Slightly better for liquid options
+    take_profit_pct: 50
+    stop_loss_pct: 100
+    
+    # SPY/QQQ Specific
+    min_premium_dollars: 40  # Minimum $40 credit per spread
+    max_spread_cost_pct: 3.0  # Very tight spreads expected
+    prefer_weekly: false  # Stick to monthlies for now
+  
+  # Strategy 2: SPY Iron Condor (Market Neutral)
+  spy_iron_condor:
+    enabled: true
+    symbols: ["SPY"]  # SPY only (more range-bound than QQQ)
+    dte_range: [30, 45]
+    short_put_delta_range: [-0.18, -0.15]  # Tighter for SPY
+    short_call_delta_range: [0.15, 0.18]
+    width: 10  # $10 width for SPY
+    min_credit: 0.60
+    max_credit: 1.50
+    take_profit_pct: 50
+    stop_loss_pct: 100
+    
+    # Entry conditions
+    min_iv_rank: 30  # Need decent IV for Iron Condors
+    max_days_since_earnings: 999  # N/A for ETFs
+  
+  # Strategy 3: QQQ Bull Put Spread (Tech Bias)
+  qqq_bull_put_spread:
+    enabled: true
+    symbols: ["QQQ"]  # QQQ only
+    dte_range: [25, 40]  # Slightly shorter for tech volatility
+    short_delta_range: [-0.28, -0.22]  # Slightly higher delta for QQQ
+    width_range: [5, 10]
+    min_credit: 0.45
+    max_risk_reward: 3.0
+    take_profit_pct: 50
+    stop_loss_pct: 100
+    
+    # QQQ moves faster - tighter management
+    adjust_at_loss_pct: 40  # Adjust earlier
+  
+  # Strategy 4: 0DTE Strategy (Advanced - Disabled by default)
+  zero_dte_strategy:
+    enabled: false  # Enable after mastering monthlies
+    symbols: ["SPY"]  # SPY has the most 0DTE liquidity
+    dte: 0  # Same-day expiration
+    entry_time: "10:00"  # Enter after opening volatility
+    exit_time: "15:45"  # Exit before close
+    short_delta_range: [-0.10, -0.05]  # Very OTM
+    max_position_size: 2  # Small size for 0DTE
+    take_profit_pct: 30  # Quick profits
+    stop_loss_pct: 100
+  
+  # Strategy 5: SPY/QQQ Ratio Spread (Bearish Hedge)
+  ratio_put_spread:
+    enabled: false  # Advanced strategy
+    dte_range: [30, 45]
+    ratio: "1:2"  # Sell 1, Buy 2
+    min_credit: 0.20
+    
+# ========================================
+# SPY/QQQ SPECIFIC RULES
+# ========================================
+
+special_rules:
+  spy:
+    # SPY-specific characteristics
+    expected_move_pct: 1.5  # Weekly expected move
+    prefer_morning_entry: true  # Less volatility
+    avoid_fomc_week: true  # Federal Reserve announcements
+    avoid_opex_week: false  # Monthly expiration is fine
+    max_concurrent_positions: 3
+    
+    # SPY tends to be more stable
+    default_width: 10
+    min_otm_pct: 3.0  # Minimum 3% out of money
+  
+  qqq:
+    # QQQ-specific characteristics
+    expected_move_pct: 2.0  # More volatile than SPY
+    prefer_morning_entry: true
+    avoid_fomc_week: true
+    avoid_big_tech_earnings: true  # AAPL, MSFT, GOOGL, etc.
+    max_concurrent_positions: 3
+    
+    # QQQ moves faster
+    default_width: 8
+    min_otm_pct: 3.5  # Slightly more OTM for safety
+  
+  # Market Regime Detection
+  market_regime:
+    use_vix: true
+    vix_high_threshold: 20  # High volatility above 20
+    vix_low_threshold: 12  # Low volatility below 12
+    
+    # Adjust strategy based on VIX
+    high_vix_actions:
+      - sell_more_premium  # High IV = good for selling
+      - tighter_stops  # But more risk
+    low_vix_actions:
+      - reduce_position_size  # Low premium
+      - wait_for_better_setups
+
+# ========================================
+# LEARNING & OPTIMIZATION
+# ========================================
+
+learning:
+  enabled: true
+  update_frequency: weekly  # Weekly for indices (more data)
+  
+  # SPY/QQQ specific learning
+  track_spy_qqq_correlation: true
+  track_sector_rotation: true  # QQQ vs SPY performance
+  track_vix_relationship: true
+  
+  # Optimization targets
+  target_win_rate: 70  # Aim for 70%+ on indices
+  target_profit_factor: 2.0
+  max_acceptable_drawdown: 10  # 10% max drawdown
+  
+  # Auto-adjustment rules
+  adjustment:
+    enabled: true
+    max_change_pct: 15  # Can adjust more for liquid indices
+    min_sample_size: 20  # Need 20 trades before adjusting
+    confidence_threshold: 0.75
+
+# ========================================
+# REAL-TIME DATA COLLECTION
+# ========================================
+
+realtime_data:
+  enabled: true
+  collect_interval_seconds: 1.0  # Collect data every second
+  buffer_size: 100  # Batch insert every 100 ticks
+  
+  # Data retention
+  retention_days: 30  # Keep 30 days of tick data
+  
+  # Storage optimization
+  compress_old_data: true  # Compress data older than 7 days
+  aggregate_to_minutes: true  # Create minute bars from tick data
+
+# ========================================
+# MONITORING & ALERTS
+# ========================================
+
+monitoring:
+  check_interval_seconds: 30  # Check every 30 seconds (very liquid)
+  
+  alerts:
+    enabled: true
+    channels:
+      - console
+      - webhook
+    
+    # SPY/QQQ specific alerts
+    conditions:
+      - type: spy_qqq_divergence
+        threshold_pct: 3.0  # Alert if 3%+ divergence
+      - type: vix_spike
+        threshold_change: 20  # 20%+ VIX increase
+      - type: position_loss
+        threshold_pct: 30  # Alert at 30% loss
+      - type: daily_profit_target
+        threshold: 200  # Alert when $200+ profit
+
+# ========================================
+# BACKTEST PARAMETERS
+# ========================================
+
+backtest:
+  enabled: true
+  start_date: "2023-01-01"
+  end_date: "2024-12-31"
+  initial_capital: 100000
+  
+  # Test different market conditions
+  scenarios:
+    - bull_market
+    - bear_market
+    - high_volatility
+    - low_volatility
+    - choppy_sideways

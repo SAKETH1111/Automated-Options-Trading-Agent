@@ -1,0 +1,134 @@
+trading:
+  mode: paper  # paper or live
+  market_hours:
+    start: "09:30"
+    end: "16:00"
+    timezone: "America/New_York"
+  
+  # Risk Management
+  risk:
+    max_daily_loss_pct: 5.0
+    max_position_size_pct: 20.0
+    max_trades_per_day: 10
+    max_positions_per_symbol: 2
+    stop_loss_pct: 50  # % of credit received
+    take_profit_pct: 50  # % of credit received
+    max_portfolio_heat: 30  # Max % of portfolio at risk
+
+  # Position Sizing
+  position_sizing:
+    default_contracts: 1
+    min_account_balance: 10000
+    kelly_criterion: false
+    fixed_risk_per_trade_pct: 1.0
+
+# Market Scanning Criteria
+scanning:
+  # General Filters
+  min_stock_price: 20
+  max_stock_price: 500
+  min_market_cap: 5000000000  # 5B
+  min_avg_volume: 1000000
+  
+  # Options Filters
+  min_open_interest: 100
+  min_volume: 50
+  max_bid_ask_spread_pct: 10.0
+  
+  # Volatility
+  min_iv_rank: 25
+  max_iv_rank: 95
+  
+  # Universe - SPY & QQQ ONLY (Highly liquid index ETFs)
+  watchlist:
+    - SPY  # S&P 500 ETF - Most liquid options in the world
+    - QQQ  # Nasdaq-100 ETF - Tech-heavy, higher volatility
+
+# Strategy Parameters
+strategies:
+  bull_put_spread:
+    enabled: true
+    dte_range: [25, 45]
+    short_delta_range: [-0.30, -0.20]
+    width_range: [5, 10]
+    min_credit: 0.30  # Minimum credit per contract
+    max_risk_reward: 4.0
+    
+  cash_secured_put:
+    enabled: true
+    dte_range: [30, 45]
+    delta_range: [-0.30, -0.20]
+    min_premium: 0.50
+    
+  iron_condor:
+    enabled: true
+    dte_range: [30, 45]
+    short_put_delta_range: [-0.20, -0.15]
+    short_call_delta_range: [0.15, 0.20]
+    width: 5
+    min_credit: 0.50
+
+# Learning System Configuration
+learning:
+  enabled: true
+  update_frequency: daily  # daily, weekly, monthly
+  
+  # Error Taxonomy
+  error_categories:
+    - entry_quality
+    - liquidity_execution
+    - volatility
+    - risk_policy
+    - timing
+    - greek_risk
+  
+  # Parameter Adjustment
+  adjustment:
+    enabled: true
+    max_change_pct: 10  # Max % change per adjustment
+    min_sample_size: 30  # Min trades before adjusting
+    confidence_threshold: 0.8
+    ab_test_split: 0.2  # 20% for testing new parameters
+  
+  # Attribution Analysis
+  attribution:
+    factors:
+      - entry_price
+      - iv_rank
+      - dte
+      - delta
+      - liquidity
+      - market_regime
+
+# Monitoring & Alerts
+monitoring:
+  check_interval_seconds: 60
+  
+  alerts:
+    enabled: true
+    channels:
+      - console
+      - email
+      - webhook
+    
+    conditions:
+      - type: daily_loss_limit
+        threshold_pct: 4.0
+      - type: position_loss
+        threshold_pct: 40
+      - type: execution_failure
+      - type: system_error
+
+# Database
+database:
+  pool_size: 10
+  max_overflow: 20
+  echo: false
+
+# Logging
+logging:
+  level: INFO
+  format: "json"
+  rotation: "100 MB"
+  retention: "30 days"
+

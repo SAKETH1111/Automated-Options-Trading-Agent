@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  trading-agent:
+    build: .
+    container_name: options-trading-agent
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+      - ./config:/app/config
+    depends_on:
+      - postgres
+    networks:
+      - trading-network
+  
+  postgres:
+    image: postgres:15-alpine
+    container_name: trading-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: options_trading
+      POSTGRES_USER: trading_user
+      POSTGRES_PASSWORD: trading_password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - trading-network
+
+networks:
+  trading-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+
+
