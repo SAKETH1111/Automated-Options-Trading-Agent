@@ -4,7 +4,7 @@ Calculate optimal position sizes based on volatility and Kelly Criterion
 """
 
 import numpy as np
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from loguru import logger
