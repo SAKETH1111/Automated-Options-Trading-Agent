@@ -262,3 +262,136 @@ class IndexTickData(Base):
     def __repr__(self):
         return f"<IndexTickData(symbol={self.symbol}, timestamp={self.timestamp}, price={self.price})>"
 
+
+class TechnicalIndicators(Base):
+    """Store calculated technical indicators for analysis"""
+    __tablename__ = "technical_indicators"
+    
+    indicator_id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    
+    # Symbol and Timestamp
+    symbol = Column(String(10), nullable=False, index=True)
+    timestamp = Column(DateTime, nullable=False, index=True)
+    
+    # Moving Averages
+    sma_10 = Column(Float)
+    sma_20 = Column(Float)
+    sma_50 = Column(Float)
+    sma_200 = Column(Float)
+    ema_12 = Column(Float)
+    ema_26 = Column(Float)
+    ema_50 = Column(Float)
+    
+    # Momentum Indicators
+    rsi_14 = Column(Float)
+    macd = Column(Float)
+    macd_signal = Column(Float)
+    macd_histogram = Column(Float)
+    stoch_k = Column(Float)
+    stoch_d = Column(Float)
+    
+    # Volatility Indicators
+    bb_upper = Column(Float)
+    bb_middle = Column(Float)
+    bb_lower = Column(Float)
+    bb_width = Column(Float)
+    atr_14 = Column(Float)
+    
+    # Trend Indicators
+    adx = Column(Float)
+    plus_di = Column(Float)
+    minus_di = Column(Float)
+    
+    # Volume Indicators
+    obv = Column(Float)
+    vwap = Column(Float)
+    
+    # Metadata
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f"<TechnicalIndicators(symbol={self.symbol}, timestamp={self.timestamp})>"
+
+
+class MarketRegime(Base):
+    """Store market regime classifications"""
+    __tablename__ = "market_regimes"
+    
+    regime_id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    
+    # Symbol and Timestamp
+    symbol = Column(String(10), nullable=False, index=True)
+    timestamp = Column(DateTime, nullable=False, index=True)
+    
+    # Regime Classifications
+    volatility_regime = Column(String(50))
+    trend_regime = Column(String(50))
+    momentum_regime = Column(String(50))
+    volume_regime = Column(String(50))
+    market_hours_regime = Column(String(50))
+    
+    # Regime Metrics
+    volatility_percentile = Column(Float)
+    trend_strength = Column(Float)
+    rsi_value = Column(Float)
+    volume_ratio = Column(Float)
+    
+    # Overall Assessment
+    overall_regime = Column(String(50))
+    recommended_action = Column(String(50))
+    recommended_strategy = Column(Text)
+    
+    # Metadata
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f"<MarketRegime(symbol={self.symbol}, regime={self.overall_regime})>"
+
+
+class PatternDetection(Base):
+    """Store detected chart patterns"""
+    __tablename__ = "pattern_detections"
+    
+    pattern_id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    
+    # Symbol and Timestamp
+    symbol = Column(String(10), nullable=False, index=True)
+    timestamp = Column(DateTime, nullable=False, index=True)
+    
+    # Support/Resistance
+    support_levels = Column(JSON)  # List of support prices
+    resistance_levels = Column(JSON)  # List of resistance prices
+    near_support = Column(Boolean)
+    near_resistance = Column(Boolean)
+    
+    # Trend Detection
+    trend_direction = Column(String(20))
+    trend_strength = Column(String(20))
+    trend_angle = Column(Float)
+    
+    # Pattern Recognition
+    higher_highs = Column(Boolean)
+    higher_lows = Column(Boolean)
+    lower_highs = Column(Boolean)
+    lower_lows = Column(Boolean)
+    pattern_type = Column(String(50))
+    
+    # Breakout Detection
+    breakout_detected = Column(Boolean)
+    breakout_direction = Column(String(10))
+    volume_confirmed = Column(Boolean)
+    
+    # Consolidation
+    is_consolidating = Column(Boolean)
+    consolidation_range = Column(Float)
+    
+    # Reversal Patterns
+    reversal_detected = Column(Boolean)
+    reversal_type = Column(String(50))
+    
+    # Metadata
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f"<PatternDetection(symbol={self.symbol}, pattern={self.pattern_type})>"
+
