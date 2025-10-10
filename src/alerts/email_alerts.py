@@ -10,6 +10,10 @@ from email.mime.multipart import MIMEMultipart
 from typing import Dict, List, Optional
 from datetime import datetime
 from loguru import logger
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 
 class EmailAlertManager:
