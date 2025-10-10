@@ -5,7 +5,7 @@ Analyze correlations between positions for diversification
 
 import numpy as np
 import pandas as pd
-from typing import Dict, List
+from typing import Dict, List, Optional
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from loguru import logger
