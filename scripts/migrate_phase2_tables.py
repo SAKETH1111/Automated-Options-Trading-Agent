@@ -11,7 +11,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from loguru import logger
-from src.database.session import get_engine
+from src.database.session import get_db
 from src.database.models import (
     Base, OptionsChain, ImpliedVolatility, 
     OptionsOpportunity, UnusualOptionsActivity
@@ -23,8 +23,9 @@ def main():
     logger.info("Starting Phase 2 database migration...")
     
     try:
-        # Get database engine
-        engine = get_engine()
+        # Get database session
+        db = get_db()
+        engine = db.engine
         
         # Create all tables
         logger.info("Creating options tables...")

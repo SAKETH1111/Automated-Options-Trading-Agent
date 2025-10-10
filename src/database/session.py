@@ -62,3 +62,15 @@ def get_db() -> DatabaseSession:
     return _db_session
 
 
+def get_session() -> Session:
+    """Get a database session (for direct use)"""
+    db = get_db()
+    return db.SessionLocal()
+
+
+def get_engine():
+    """Get database engine"""
+    db = get_db()
+    return db.engine
+
+
