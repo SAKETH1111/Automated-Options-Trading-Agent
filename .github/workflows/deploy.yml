@@ -1,0 +1,60 @@
+name: Deploy to DigitalOcean
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * *'  # Daily deployment at 6 AM UTC
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Deploy to DigitalOcean
+      uses: appleboy/ssh-action@v0.1.5
+      with:
+        host: ${{ secrets.DROPLET_IP }}
+        username: ${{ secrets.DROPLET_USER }}
+        key: ${{ secrets.DROPLET_SSH_KEY }}
+        script: |
+          # Run the deployment script
+          cd /opt/trading-agent
+          chmod +x scripts/github_deploy.sh
+          ./scripts/github_deploy.sh
+          
+    - name: Health Check
+      uses: appleboy/ssh-action@v0.1.5
+      with:
+        host: ${{ secrets.DROPLET_IP }}
+        username: ${{ secrets.DROPLET_USER }}
+        key: ${{ secrets.DROPLET_SSH_KEY }}
+        script: |
+          # Wait for service to stabilize
+          sleep 10
+          
+          # Health check
+          echo "🔍 Performing health check..."
+          
+          # Check service status
+          if systemctl is-active --quiet trading-agent; then
+            echo "✅ Service is running"
+          else
+            echo "❌ Service is not running"
+            systemctl status trading-agent --no-pager
+            exit 1
+          fi
+          
+          # Check data collection
+          TICK_COUNT=$(sudo -u postgres psql -d options_trading -c "SELECT COUNT(*) FROM index_tick_data WHERE timestamp > NOW() - INTERVAL '5 minutes';" 2>/dev/null | grep -o '[0-9]*' | tail -1)
+          if [ "$TICK_COUNT" -gt 0 ]; then
+            echo "✅ Data collection active ($TICK_COUNT ticks in last 5 min)"
+          else
+            echo "⚠️  Data collection may be slow"
+          fi
+          
+          echo "🎉 Health check completed!"
