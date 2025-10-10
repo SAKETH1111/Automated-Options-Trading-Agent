@@ -192,33 +192,6 @@ class LearningLog(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
-class MarketRegime(Base):
-    """Track market regime for context-aware strategy selection"""
-    __tablename__ = "market_regimes"
-    
-    regime_id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    
-    # Timestamp
-    timestamp = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
-    
-    # Regime Classification
-    regime = Column(String(50), nullable=False)  # bull, bear, sideways, high_vol, low_vol
-    
-    # Market Metrics
-    vix = Column(Float)
-    vix_rank = Column(Float)  # 0-100
-    market_trend = Column(String(20))  # up, down, sideways
-    volatility = Column(Float)
-    
-    # Correlation
-    spy_correlation = Column(Float)
-    
-    # Additional Context
-    market_metadata = Column(JSON)  # Additional market data
-    
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-
 class IndexTickData(Base):
     """Store second-by-second tick data for indexes (SPY, QQQ, etc.)"""
     __tablename__ = "index_tick_data"
