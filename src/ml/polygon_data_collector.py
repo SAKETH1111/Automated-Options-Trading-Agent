@@ -13,6 +13,13 @@ from loguru import logger
 
 from polygon import RESTClient
 
+try:
+    from src.ml.options_feature_engineer import OptionsFeatureEngineer
+    OPTIONS_FEATURES_AVAILABLE = True
+except ImportError:
+    OPTIONS_FEATURES_AVAILABLE = False
+    logger.warning("Options feature engineer not available")
+
 
 class PolygonDataCollector:
     """
@@ -36,7 +43,18 @@ class PolygonDataCollector:
             raise ValueError("POLYGON_API_KEY not found in environment variables!")
         
         self.client = RESTClient(api_key)
-        logger.info("Polygon Data Collector initialized")
+        
+        # Initialize options feature engineer if available
+        if OPTIONS_FEATURES_AVAILABLE:
+            try:
+                self.options_engineer = OptionsFeatureEngineer(db_session)
+                logger.info("Polygon Data Collector initialized with options features")
+            except Exception as e:
+                logger.warning(f"Options features not available: {e}")
+                self.options_engineer = None
+        else:
+            self.options_engineer = None
+            logger.info("Polygon Data Collector initialized")
     
     def collect_training_data(
         self,
@@ -80,6 +98,14 @@ class PolygonDataCollector:
                 
                 # Calculate technical indicators
                 df = self._calculate_indicators(df)
+                
+                # Add options features (if available)
+                if self.options_engineer:
+                    try:
+                        df = self.options_engineer.add_options_features(df, symbol)
+                        logger.info(f"Added options features for {symbol}")
+                    except Exception as e:
+                        logger.warning(f"Could not add options features for {symbol}: {e}")
                 
                 all_data.append(df)
                 

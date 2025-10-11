@@ -37,5 +37,19 @@
   "high_52w",
   "low_52w",
   "distance_from_high",
-  "distance_from_low"
+  "distance_from_low",
+  "atm_iv",
+  "put_call_ratio",
+  "avg_delta_30",
+  "total_open_interest",
+  "atm_put_delta",
+  "atm_put_theta",
+  "atm_put_vega",
+  "atm_put_gamma",
+  "atm_call_delta",
+  "atm_call_theta",
+  "atm_call_vega",
+  "atm_call_gamma",
+  "iv_skew",
+  "option_volume"
 ]
