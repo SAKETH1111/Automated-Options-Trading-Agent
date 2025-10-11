@@ -32,10 +32,15 @@ def main():
     print()
     
     # Configuration
-    symbols = ['SPY', 'QQQ', 'IWM', 'DIA']  # 4 symbols (to avoid rate limiting)
+    # All symbols including new low-priced ones for small accounts
+    symbols = ['SPY', 'QQQ', 'IWM', 'DIA', 'SQQQ', 'GDX', 'XLF', 'TLT', 'XLE']
     lookback_days = 730  # 2 years of data for better ML training
     strategy = 'bull_put_spread'  # Strategy to optimize for
     timeframe = '1Day'  # Use daily data (more reliable than intraday)
+    
+    print(f"🆕 Training {len(symbols)} symbols (added 5 new low-priced symbols for small accounts)")
+    print(f"   Original: SPY, QQQ, IWM, DIA")
+    print(f"   New: SQQQ, GDX, XLF, TLT, XLE")
     
     print(f"📊 Training Configuration:")
     print(f"   Symbols: {', '.join(symbols)}")

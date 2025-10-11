@@ -23,7 +23,8 @@ from src.ml.adaptive_learner import AdaptiveLearner
 
 def main():
     parser = argparse.ArgumentParser(description="Train advanced ML features")
-    parser.add_argument("--symbols", nargs="+", default=["SPY", "QQQ", "IWM", "DIA"],
+    parser.add_argument("--symbols", nargs="+", 
+                       default=["SPY", "QQQ", "IWM", "DIA", "SQQQ", "GDX", "XLF", "TLT", "XLE"],
                        help="Symbols to train on")
     parser.add_argument("--components", nargs="+", 
                        choices=["timeframe", "ensemble", "adaptive", "all"],
