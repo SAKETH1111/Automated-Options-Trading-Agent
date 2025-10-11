@@ -797,8 +797,12 @@ class MultiTimeframeTrainer:
             timeframe_dir = os.path.join(model_dir, timeframe)
             os.makedirs(timeframe_dir, exist_ok=True)
             
-            # Save models
+            # Save models (skip None models)
             for model_name, model_info in model_data['models'].items():
+                if model_info is None:
+                    logger.info(f"Skipped {timeframe} {model_name} model (not trained)")
+                    continue
+                    
                 model_path = os.path.join(timeframe_dir, f"{model_name}.joblib")
                 joblib.dump(model_info['model'], model_path)
                 logger.info(f"Saved {timeframe} {model_name} model")
