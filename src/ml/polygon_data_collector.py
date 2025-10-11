@@ -60,8 +60,14 @@ class PolygonDataCollector:
             
             all_data = []
             
-            for symbol in symbols:
+            for i, symbol in enumerate(symbols):
                 logger.info(f"Fetching data for {symbol}...")
+                
+                # Add delay between requests to avoid rate limiting
+                if i > 0:
+                    import time
+                    time.sleep(2)  # 2 second delay between symbols
+                    logger.debug(f"Rate limit delay (2s)...")
                 
                 df = self._fetch_bars(symbol, lookback_days, timeframe)
                 

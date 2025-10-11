@@ -116,5 +116,171 @@
       "QQQ"
     ],
     "timestamp": "2025-10-10T18:59:57.299265"
+  },
+  {
+    "entry_model": {
+      "val_accuracy": 0.672,
+      "val_precision": 0.7142857142857143,
+      "val_recall": 0.3,
+      "val_f1": 0.4225352112676056,
+      "val_auc": 0.7656,
+      "test_accuracy": 0.4738955823293173,
+      "test_precision": 0.4106280193236715,
+      "test_recall": 0.9042553191489362,
+      "test_f1": 0.5647840531561462,
+      "test_auc": 0.6748798901853122,
+      "top_features": [
+        [
+          "bb_position",
+          0.09783561019431566
+        ],
+        [
+          "volume_sma_20",
+          0.07300041184567724
+        ],
+        [
+          "macd_hist",
+          0.048148026535579334
+        ],
+        [
+          "adx",
+          0.04518817111321058
+        ],
+        [
+          "distance_from_high",
+          0.042066453492031954
+        ],
+        [
+          "volatility_20",
+          0.03872529443633648
+        ],
+        [
+          "bb_width",
+          0.03244795839098856
+        ],
+        [
+          "distance_from_low",
+          0.0323688536862718
+        ],
+        [
+          "momentum_10",
+          0.030068100068243894
+        ],
+        [
+          "atr_pct",
+          0.029943263878250758
+        ]
+      ],
+      "n_features": 39
+    },
+    "win_probability_model": {
+      "val_mse": 0.004103999289132404,
+      "val_mae": 0.043871744216886444,
+      "val_r2": -0.0376524734022643,
+      "test_mse": 0.009184215138696349,
+      "test_mae": 0.06992982161009303,
+      "test_r2": -0.14104576120130896,
+      "n_features": 39
+    },
+    "volatility_model": {
+      "val_accuracy": 0.3619047619047619,
+      "test_accuracy": 0.35807860262008734,
+      "test_mae": 0.008413026709801505,
+      "n_features": 39
+    },
+    "success": true,
+    "trained_on": 871,
+    "tested_on": 249,
+    "symbols": [
+      "SPY",
+      "QQQ",
+      "IWM",
+      "DIA",
+      "XLF",
+      "XLE"
+    ],
+    "timestamp": "2025-10-10T19:41:18.577855"
+  },
+  {
+    "entry_model": {
+      "val_accuracy": 0.58,
+      "val_precision": 0.5,
+      "val_recall": 0.16666666666666666,
+      "val_f1": 0.25,
+      "val_auc": 0.7475369458128078,
+      "test_accuracy": 0.6884422110552764,
+      "test_precision": 0.6666666666666666,
+      "test_recall": 0.17647058823529413,
+      "test_f1": 0.27906976744186046,
+      "test_auc": 0.7131791647956893,
+      "top_features": [
+        [
+          "bb_position",
+          0.11748086440214663
+        ],
+        [
+          "adx",
+          0.05696930854246088
+        ],
+        [
+          "macd_hist",
+          0.053706042278536856
+        ],
+        [
+          "volume_sma_20",
+          0.04672461011902268
+        ],
+        [
+          "distance_from_high",
+          0.044956826022710734
+        ],
+        [
+          "volatility_20",
+          0.038389288328267
+        ],
+        [
+          "bb_width",
+          0.03817480704027093
+        ],
+        [
+          "atr",
+          0.03528479666785992
+        ],
+        [
+          "momentum_10",
+          0.03415733943910228
+        ],
+        [
+          "momentum_20",
+          0.03350615407845107
+        ]
+      ],
+      "n_features": 39
+    },
+    "win_probability_model": {
+      "val_mse": 0.014514345157082675,
+      "val_mae": 0.06372289673579745,
+      "val_r2": -0.12746558944220143,
+      "test_mse": 0.004073897511351915,
+      "test_mae": 0.05001806816015802,
+      "test_r2": -0.39432035518360653,
+      "n_features": 39
+    },
+    "volatility_model": {
+      "val_accuracy": 0.425,
+      "test_accuracy": 0.2346368715083799,
+      "test_mae": 0.0032797727938445763,
+      "n_features": 39
+    },
+    "success": true,
+    "trained_on": 696,
+    "tested_on": 199,
+    "symbols": [
+      "SPY",
+      "QQQ",
+      "IWM",
+      "DIA"
+    ],
+    "timestamp": "2025-10-10T19:43:24.940212"
   }
 ]
