@@ -780,7 +780,10 @@ class MultiTimeframeTrainer:
             logger.info(f"✅ {config.name} models trained:")
             logger.info(f"   Entry Signal Accuracy: {entry_accuracy:.3f}")
             logger.info(f"   Win Probability R²: {win_r2:.3f}")
-            logger.info(f"   Volatility Accuracy: {vol_accuracy:.3f}")
+            if models['volatility'] is not None:
+                logger.info(f"   Volatility Accuracy: {vol_accuracy:.3f}")
+            else:
+                logger.info(f"   Volatility Model: Skipped (insufficient class diversity)")
         
         return trained_models
     
