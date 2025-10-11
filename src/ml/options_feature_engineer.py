@@ -142,10 +142,15 @@ class OptionsFeatureEngineer:
     
     def _get_avg_delta(self, options_data: List[Dict], delta_target: float = 0.30) -> float:
         """Get average delta around target"""
-        deltas = [abs(opt['greeks'].get('delta', 0)) 
-                 for opt in options_data 
-                 if opt.get('greeks', {}).get('delta')
-                 and abs(abs(opt['greeks']['delta']) - delta_target) < 0.10]
+        deltas = []
+        for opt in options_data:
+            if opt.get('greeks', {}).get('delta'):
+                try:
+                    delta = float(opt['greeks']['delta'])
+                    if abs(abs(delta) - delta_target) < 0.10:
+                        deltas.append(abs(delta))
+                except (ValueError, TypeError):
+                    continue
         
         return np.mean(deltas) if deltas else delta_target
     
@@ -170,7 +175,11 @@ class OptionsFeatureEngineer:
         for opt in candidates:
             delta = opt.get('greeks', {}).get('delta')
             if delta:
-                opt['_delta_diff'] = abs(delta - target_delta)
+                try:
+                    delta_float = float(delta)
+                    opt['_delta_diff'] = abs(delta_float - target_delta)
+                except (ValueError, TypeError):
+                    continue
         
         candidates = [opt for opt in candidates if '_delta_diff' in opt]
         
