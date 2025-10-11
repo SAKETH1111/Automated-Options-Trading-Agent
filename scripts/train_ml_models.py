@@ -32,15 +32,16 @@ def main():
     print()
     
     # Configuration
-    # All symbols including new low-priced ones for small accounts
-    symbols = ['SPY', 'QQQ', 'IWM', 'DIA', 'SQQQ', 'GDX', 'XLF', 'TLT', 'XLE']
+    # All symbols including new sector ETFs for small/medium accounts
+    # Removed leveraged ETFs (SQQQ, UVXY, TZA) - they have non-standard options
+    symbols = ['SPY', 'QQQ', 'IWM', 'DIA', 'XLF', 'GDX', 'TLT', 'XLE', 'EWZ']
     lookback_days = 730  # 2 years of data for better ML training
     strategy = 'bull_put_spread'  # Strategy to optimize for
     timeframe = '1Day'  # Use daily data (more reliable than intraday)
     
-    print(f"🆕 Training {len(symbols)} symbols (added 5 new low-priced symbols for small accounts)")
+    print(f"🆕 Training {len(symbols)} symbols (added 5 new sector ETFs for all account sizes)")
     print(f"   Original: SPY, QQQ, IWM, DIA")
-    print(f"   New: SQQQ, GDX, XLF, TLT, XLE")
+    print(f"   New Sectors: XLF, GDX, TLT, XLE, EWZ")
     
     print(f"📊 Training Configuration:")
     print(f"   Symbols: {', '.join(symbols)}")

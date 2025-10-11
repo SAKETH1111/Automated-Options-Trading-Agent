@@ -28,8 +28,9 @@ def main():
     print("=" * 80)
     print()
     
-    # Batch 1: Primary symbols (major indices + SQQQ)
-    symbols = ['SPY', 'QQQ', 'IWM', 'DIA', 'SQQQ']
+    # Batch 1: Primary symbols (major indices)
+    # Removed SQQQ (leveraged ETF with non-standard options)
+    symbols = ['SPY', 'QQQ', 'IWM', 'DIA', 'XLF']
     
     logger.info("🚀 Starting Advanced ML Training - Batch 1")
     logger.info(f"Symbols: {symbols}")

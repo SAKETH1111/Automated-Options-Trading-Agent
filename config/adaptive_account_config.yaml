@@ -64,13 +64,15 @@ scanning:
   adaptive_symbols:
     enabled: true
     
-    # Micro accounts ($1K-$2.5K) - Ultra-low price symbols
+    # Micro accounts ($1K-$2.5K) - Low price symbols with good options
     micro_tier:
-      - SQQQ   # ~$9 (inverse QQQ, volatile)
-      - UVXY   # ~$10 (volatility ETF)
-      - TZA    # ~$15 (inverse IWM)
-      max_stock_price: 30
-      preferred_spread_width: [1, 2]
+      - EWZ    # ~$28 (Brazil ETF, good options liquidity)
+      - GDX    # ~$28 (gold miners, excellent options)
+      - F      # ~$12 (Ford, liquid options)
+      - GOLD   # ~$22 (Barrick Gold, good options)
+      max_stock_price: 35
+      preferred_spread_width: [1, 2, 3]
+      note: "Removed leveraged ETFs (SQQQ, UVXY, TZA) - non-standard options"
     
     # Small accounts ($2.5K-$5K) - Low price symbols
     small_tier:

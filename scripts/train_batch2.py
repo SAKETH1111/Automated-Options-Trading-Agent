@@ -29,7 +29,8 @@ def main():
     print()
     
     # Batch 2: Secondary symbols (sectors for small/medium accounts)
-    symbols = ['GDX', 'XLF', 'TLT', 'XLE']
+    # Removed UVXY, TZA (leveraged ETFs with non-standard options)
+    symbols = ['GDX', 'TLT', 'XLE', 'EWZ']  # Added EWZ (Brazil ETF ~$28)
     
     logger.info("🚀 Starting Advanced ML Training - Batch 2")
     logger.info(f"Symbols: {symbols}")
