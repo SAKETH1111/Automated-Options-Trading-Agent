@@ -48,11 +48,12 @@ class PerformanceTracker:
             start_of_day = date.replace(hour=0, minute=0, second=0, microsecond=0)
             end_of_day = start_of_day + timedelta(days=1)
             
-            closed_trades = self.db.query(Trade).filter(
-                Trade.timestamp_exit >= start_of_day,
-                Trade.timestamp_exit < end_of_day,
-                Trade.status == 'closed'
-            ).all()
+            with self.db.get_session() as session:
+                closed_trades = session.query(Trade).filter(
+                    Trade.timestamp_exit >= start_of_day,
+                    Trade.timestamp_exit < end_of_day,
+                    Trade.status == 'closed'
+                ).all()
             
             total_pnl = sum(t.pnl for t in closed_trades)
             winning_trades = sum(1 for t in closed_trades if t.pnl > 0)
@@ -80,10 +81,11 @@ class PerformanceTracker:
             start_of_week = today - timedelta(days=today.weekday())
             start_of_week = start_of_week.replace(hour=0, minute=0, second=0, microsecond=0)
             
-            closed_trades = self.db.query(Trade).filter(
-                Trade.timestamp_exit >= start_of_week,
-                Trade.status == 'closed'
-            ).all()
+            with self.db.get_session() as session:
+                closed_trades = session.query(Trade).filter(
+                    Trade.timestamp_exit >= start_of_week,
+                    Trade.status == 'closed'
+                ).all()
             
             total_pnl = sum(t.pnl for t in closed_trades)
             winning_trades = sum(1 for t in closed_trades if t.pnl > 0)
@@ -107,10 +109,11 @@ class PerformanceTracker:
             today = datetime.utcnow()
             start_of_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
             
-            closed_trades = self.db.query(Trade).filter(
-                Trade.timestamp_exit >= start_of_month,
-                Trade.status == 'closed'
-            ).all()
+            with self.db.get_session() as session:
+                closed_trades = session.query(Trade).filter(
+                    Trade.timestamp_exit >= start_of_month,
+                    Trade.status == 'closed'
+                ).all()
             
             total_pnl = sum(t.pnl for t in closed_trades)
             winning_trades = sum(1 for t in closed_trades if t.pnl > 0)
@@ -140,9 +143,10 @@ class PerformanceTracker:
     def get_all_time_stats(self) -> Dict:
         """Get all-time trading statistics"""
         try:
-            all_trades = self.db.query(Trade).filter(
-                Trade.status == 'closed'
-            ).all()
+            with self.db.get_session() as session:
+                all_trades = session.query(Trade).filter(
+                    Trade.status == 'closed'
+                ).all()
             
             if not all_trades:
                 return {

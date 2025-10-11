@@ -321,10 +321,11 @@ async def get_performance():
 @app.get("/api/positions")
 async def get_positions():
     """Get open positions"""
-    db = get_session()
+    db = get_db()
     
-    open_trades = db.query(Trade).filter(Trade.status == 'open').all()
-    current_pnl = sum(t.pnl for t in open_trades)
+    with db.get_session() as session:
+        open_trades = session.query(Trade).filter(Trade.status == 'open').all()
+        current_pnl = sum(t.pnl for t in open_trades)
     
     db.close()
     
@@ -364,11 +365,12 @@ async def get_risk_status():
 @app.get("/api/trades/recent")
 async def get_recent_trades():
     """Get recent trades"""
-    db = get_session()
+    db = get_db()
     
-    recent = db.query(Trade).filter(
-        Trade.status == 'closed'
-    ).order_by(Trade.timestamp_exit.desc()).limit(10).all()
+    with db.get_session() as session:
+        recent = session.query(Trade).filter(
+            Trade.status == 'closed'
+        ).order_by(Trade.timestamp_exit.desc()).limit(10).all()
     
     trades = [{
         "date": t.timestamp_exit.isoformat() if t.timestamp_exit else None,
@@ -394,13 +396,14 @@ async def get_equity_chart():
 @app.get("/api/charts/price")
 async def get_price_chart(symbol: str = "SPY"):
     """Get price chart data"""
-    db = get_session()
+    db = get_db()
     
     cutoff = datetime.utcnow() - timedelta(hours=24)
-    data = db.query(IndexTickData).filter(
-        IndexTickData.symbol == symbol,
-        IndexTickData.timestamp >= cutoff
-    ).order_by(IndexTickData.timestamp.asc()).limit(1000).all()
+    with db.get_session() as session:
+        data = session.query(IndexTickData).filter(
+            IndexTickData.symbol == symbol,
+            IndexTickData.timestamp >= cutoff
+        ).order_by(IndexTickData.timestamp.asc()).limit(1000).all()
     
     db.close()
     

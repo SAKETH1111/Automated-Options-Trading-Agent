@@ -235,10 +235,11 @@ class CorrelationAnalyzer:
     ) -> List[float]:
         """Get price data for a symbol"""
         try:
-            data = self.db.query(IndexTickData).filter(
-                IndexTickData.symbol == symbol,
-                IndexTickData.timestamp >= start_date
-            ).order_by(IndexTickData.timestamp.asc()).all()
+            with self.db.get_session() as session:
+                data = session.query(IndexTickData).filter(
+                    IndexTickData.symbol == symbol,
+                    IndexTickData.timestamp >= start_date
+                ).order_by(IndexTickData.timestamp.asc()).all()
             
             return [d.price for d in data]
             

@@ -37,9 +37,10 @@ class AutomatedPositionManager:
             List of open positions
         """
         try:
-            open_trades = self.db.query(Trade).filter(
-                Trade.status == 'open'
-            ).all()
+            with self.db.get_session() as session:
+                open_trades = session.query(Trade).filter(
+                    Trade.status == 'open'
+                ).all()
             
             positions = []
             

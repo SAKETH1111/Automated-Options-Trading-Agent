@@ -114,10 +114,11 @@ class DynamicPositionSizer:
             # Get recent price data
             cutoff = datetime.utcnow() - timedelta(days=20)
             
-            query = self.db.query(IndexTickData).filter(
-                IndexTickData.symbol == symbol,
-                IndexTickData.timestamp >= cutoff
-            ).order_by(IndexTickData.timestamp.asc())
+            with self.db.get_session() as session:
+                query = session.query(IndexTickData).filter(
+                    IndexTickData.symbol == symbol,
+                    IndexTickData.timestamp >= cutoff
+                ).order_by(IndexTickData.timestamp.asc())
             
             data = query.all()
             
@@ -173,10 +174,11 @@ class DynamicPositionSizer:
         """
         try:
             # Get historical win rate and avg win/loss for strategy
-            recent_trades = self.db.query(Trade).filter(
-                Trade.strategy == strategy,
-                Trade.status == 'closed'
-            ).order_by(Trade.timestamp_exit.desc()).limit(50).all()
+            with self.db.get_session() as session:
+                recent_trades = session.query(Trade).filter(
+                    Trade.strategy == strategy,
+                    Trade.status == 'closed'
+                ).order_by(Trade.timestamp_exit.desc()).limit(50).all()
             
             if len(recent_trades) < 10:
                 # Not enough history, use confidence
@@ -226,9 +228,10 @@ class DynamicPositionSizer:
             # Get recent market regime data
             from src.database.models import MarketRegime
             
-            latest_regime = self.db.query(MarketRegime).filter(
-                MarketRegime.symbol == symbol
-            ).order_by(MarketRegime.timestamp.desc()).first()
+            with self.db.get_session() as session:
+                latest_regime = session.query(MarketRegime).filter(
+                    MarketRegime.symbol == symbol
+                ).order_by(MarketRegime.timestamp.desc()).first()
             
             if not latest_regime:
                 return 1.0
@@ -262,9 +265,10 @@ class DynamicPositionSizer:
     def _get_open_positions(self) -> List[Dict]:
         """Get open positions"""
         try:
-            trades = self.db.query(Trade).filter(
-                Trade.status == 'open'
-            ).all()
+            with self.db.get_session() as session:
+                trades = session.query(Trade).filter(
+                    Trade.status == 'open'
+                ).all()
             
             return [{
                 'symbol': t.symbol,
