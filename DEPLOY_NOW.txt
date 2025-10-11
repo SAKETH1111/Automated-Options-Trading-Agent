@@ -1,0 +1,83 @@
+================================================================================
+🚀 DEPLOY ML SYSTEM TO DIGITALOCEAN - COPY & PASTE COMMANDS
+================================================================================
+
+OPTION 1: ONE COMMAND (EASIEST) ⭐
+================================================================================
+
+chmod +x DEPLOY_TO_DIGITALOCEAN.sh && ./DEPLOY_TO_DIGITALOCEAN.sh
+
+(This does everything automatically - takes 10-15 minutes)
+
+================================================================================
+OPTION 2: MANUAL COMMANDS (IF SCRIPT FAILS)
+================================================================================
+
+# 1. Commit and push
+git add -A
+git commit -m "Add ML training with Polygon - 65.66% accuracy"
+git push origin main
+
+# 2. SSH to server
+ssh root@45.55.150.19
+
+# 3. Pull code
+cd /opt/trading-agent
+git pull origin main
+
+# 4. Install deps
+source venv/bin/activate
+pip install polygon-api-client
+
+# 5. Add Polygon key
+echo "POLYGON_API_KEY=wWrUjjcksqLDPntXbJb72kiFzAwyqIpY" >> .env
+
+# 6. Train models (5-10 min)
+python scripts/train_ml_models.py
+
+# 7. Test models
+python scripts/test_ml_models.py
+
+# 8. Restart bot
+pkill -f start_telegram_bot
+nohup python scripts/start_telegram_bot.py > logs/telegram_bot.log 2>&1 &
+
+# 9. Exit
+exit
+
+================================================================================
+TEST IN TELEGRAM
+================================================================================
+
+/ml      → Check ML models (should show LOADED)
+/status  → Check system status
+/resume  → Start trading with ML
+
+================================================================================
+EXPECTED RESULTS
+================================================================================
+
+Training Output:
+  ✅ Collected 1,002 samples
+  ✅ Entry Model Accuracy: 65.66%
+  ✅ TRAINING COMPLETED SUCCESSFULLY!
+
+Telegram /ml:
+  🤖 ML Models Status
+  ✅ Status: LOADED
+  📊 Models: 3
+
+================================================================================
+FILES DEPLOYED
+================================================================================
+
+✅ src/ml/polygon_data_collector.py   - Polygon data fetcher
+✅ src/ml/model_trainer.py             - ML trainer
+✅ src/ml/model_loader.py              - Model loader
+✅ scripts/train_ml_models.py          - Training script
+✅ scripts/test_ml_models.py           - Test script
+✅ Updated Telegram bot with /ml       - ML monitoring
+✅ Updated requirements.txt            - Dependencies
+
+================================================================================
+

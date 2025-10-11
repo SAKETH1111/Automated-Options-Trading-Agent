@@ -405,3 +405,5 @@ watch -n 5 'python -c "from src.orchestrator import TradingOrchestrator; o = Tra
 **Ready to trade? Start with paper trading and work your way up! 🚀**
 
 
+
+

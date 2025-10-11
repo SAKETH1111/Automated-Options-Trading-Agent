@@ -412,3 +412,5 @@ Monthly review:
 **Remember**: No strategy works all the time. Diversify, manage risk, and continuously learn! 📈
 
 
+
+

@@ -283,12 +283,24 @@ async def root():
 @app.get("/api/account")
 async def get_account():
     """Get account summary"""
-    # Placeholder - integrate with your Alpaca client
-    return {
-        "equity": 10000.0,
-        "cash": 8500.0,
-        "buying_power": 8500.0
-    }
+    from src.brokers.alpaca_client import AlpacaClient
+    
+    try:
+        alpaca = AlpacaClient()
+        account = alpaca.get_account()
+        
+        return {
+            "equity": float(account.get("equity", 0)),
+            "cash": float(account.get("cash", 0)),
+            "buying_power": float(account.get("buying_power", 0))
+        }
+    except Exception as e:
+        return {
+            "equity": 0.0,
+            "cash": 0.0,
+            "buying_power": 0.0,
+            "error": str(e)
+        }
 
 @app.get("/api/performance")
 async def get_performance():
@@ -324,17 +336,30 @@ async def get_positions():
 @app.get("/api/risk")
 async def get_risk_status():
     """Get risk status"""
-    db = get_session()
-    risk_manager = PortfolioRiskManager(db, total_capital=10000.0)
+    from src.brokers.alpaca_client import AlpacaClient
     
-    metrics = risk_manager.get_portfolio_risk_metrics()
-    
-    db.close()
-    
-    return {
-        "total_risk_pct": metrics.get('total_risk_pct', 0),
-        "circuit_breaker_tripped": False  # Check actual circuit breaker
-    }
+    try:
+        db = get_session()
+        alpaca = AlpacaClient()
+        account = alpaca.get_account()
+        total_capital = float(account.get("equity", 100000.0))
+        
+        risk_manager = PortfolioRiskManager(db, total_capital=total_capital)
+        metrics = risk_manager.get_portfolio_risk_metrics()
+        
+        db.close()
+        
+        return {
+            "total_risk_pct": metrics.get('total_risk_pct', 0),
+            "circuit_breaker_tripped": metrics.get('circuit_breaker_tripped', False),
+            "total_capital": total_capital
+        }
+    except Exception as e:
+        return {
+            "total_risk_pct": 0,
+            "circuit_breaker_tripped": False,
+            "error": str(e)
+        }
 
 @app.get("/api/trades/recent")
 async def get_recent_trades():

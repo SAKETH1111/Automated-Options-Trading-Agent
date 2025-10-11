@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from loguru import logger
 
 from .feature_engineer import FeatureEngineer
+from .model_loader import MLModelLoader
 
 
 class SignalPredictor:
@@ -32,17 +33,23 @@ class SignalPredictor:
         self.db = db_session
         self.feature_engineer = FeatureEngineer(db_session)
         
-        # Models
+        # Load pre-trained models
+        self.ml_loader = MLModelLoader()
+        self.model_trained = self.ml_loader.load_models()
+        
+        # Legacy models (for backward compatibility)
         self.entry_model = None
         self.exit_model = None
         self.win_prob_model = None
         
         # Model metadata
-        self.model_trained = False
         self.training_date = None
         self.model_accuracy = {}
         
-        logger.info("Signal Predictor initialized")
+        if self.model_trained:
+            logger.info("Signal Predictor initialized with pre-trained models ✅")
+        else:
+            logger.warning("Signal Predictor initialized without trained models. Run training script!")
     
     def train_entry_model(
         self,
@@ -142,7 +149,7 @@ class SignalPredictor:
         Returns:
             Prediction result
         """
-        if not self.model_trained or self.entry_model is None:
+        if not self.model_trained:
             return {
                 'should_enter': False,
                 'confidence': 0.0,
@@ -163,27 +170,11 @@ class SignalPredictor:
             # Get latest features
             latest = df.iloc[-1:]
             
-            # Remove non-feature columns
-            feature_cols = [col for col in latest.columns 
-                          if col not in ['timestamp', 'target', 'future_price']]
+            # Use pre-trained model loader
+            result = self.ml_loader.predict_entry_signal(latest)
+            result['timestamp'] = datetime.utcnow()
             
-            X = latest[feature_cols]
-            
-            # Predict
-            prediction = self.entry_model.predict(X)[0]
-            probabilities = self.entry_model.predict_proba(X)[0]
-            
-            confidence = probabilities[1] if prediction == 1 else probabilities[0]
-            
-            return {
-                'should_enter': bool(prediction),
-                'confidence': float(confidence),
-                'probabilities': {
-                    'down': float(probabilities[0]),
-                    'up': float(probabilities[1])
-                },
-                'timestamp': datetime.utcnow()
-            }
+            return result
             
         except Exception as e:
             logger.error(f"Error predicting entry signal: {e}")
@@ -219,22 +210,29 @@ class SignalPredictor:
             if df.empty:
                 return 0.50  # Default 50% if no data
             
-            latest = df.iloc[-1]
+            latest = df.iloc[-1:]
             
-            # Simple heuristic model (can be replaced with trained ML model)
+            # Try to use trained model first
+            if self.model_trained:
+                win_prob = self.ml_loader.predict_win_probability(latest)
+                logger.debug(f"ML win probability: {win_prob:.2%}")
+                return win_prob
+            
+            # Fallback to heuristic model
+            latest_row = df.iloc[-1]
             win_prob = 0.50  # Base probability
             
             # Adjust based on RSI
-            rsi = latest.get('rsi', 50)
+            rsi = latest_row.get('rsi', 50)
             if 40 <= rsi <= 60:
                 win_prob += 0.10  # Neutral RSI is good
             
             # Adjust based on trend
-            if latest.get('sma_10', 0) > latest.get('sma_20', 0):
+            if latest_row.get('sma_10', 0) > latest_row.get('sma_20', 0):
                 win_prob += 0.05  # Uptrend
             
             # Adjust based on IV rank
-            iv_rank = latest.get('iv_rank', 50)
+            iv_rank = latest_row.get('iv_rank', 50)
             if strategy in ['bull_put_spread', 'iron_condor']:
                 if iv_rank > 60:
                     win_prob += 0.10  # High IV good for selling

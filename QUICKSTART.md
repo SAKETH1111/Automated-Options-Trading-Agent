@@ -266,3 +266,5 @@ tail -f logs/trading_agent.log
 *Remember: This is your learning journey. Start small, be patient, and continuously improve!*
 
 
+
+

@@ -43,8 +43,22 @@ class TradingAgentBot:
             self.enabled = True
             logger.info("Telegram bot initialized")
     
+    def _is_authorized(self, update: Update) -> bool:
+        """Check if user is authorized to use the bot"""
+        user_id = str(update.effective_user.id)
+        authorized = user_id == self.chat_id
+        
+        if not authorized:
+            logger.warning(f"Unauthorized access attempt from user {user_id} (@{update.effective_user.username})")
+        
+        return authorized
+    
     async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /start command"""
+        if not self._is_authorized(update):
+            await update.message.reply_text("🔒 Unauthorized. This bot is private.")
+            return
+        
         await update.message.reply_text(
             "🚀 *Trading Agent Bot*\n\n"
             "Welcome! I'll help you monitor and control your trading agent.\n\n"
@@ -61,6 +75,10 @@ class TradingAgentBot:
     
     async def status_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /status command"""
+        if not self._is_authorized(update):
+            await update.message.reply_text("🔒 Unauthorized. This bot is private.")
+            return
+        
         try:
             # Get account info
             account = self.alpaca.get_account()
@@ -92,6 +110,10 @@ class TradingAgentBot:
     
     async def positions_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /positions command"""
+        if not self._is_authorized(update):
+            await update.message.reply_text("🔒 Unauthorized. This bot is private.")
+            return
+        
         try:
             from src.automation.position_manager import AutomatedPositionManager
             pos_manager = AutomatedPositionManager(self.db, self.alpaca)
@@ -122,6 +144,10 @@ class TradingAgentBot:
     
     async def pnl_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /pnl command"""
+        if not self._is_authorized(update):
+            await update.message.reply_text("🔒 Unauthorized. This bot is private.")
+            return
+        
         try:
             from src.automation.performance_tracker import PerformanceTracker
             tracker = PerformanceTracker(self.db)
@@ -171,6 +197,10 @@ class TradingAgentBot:
     
     async def risk_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /risk command"""
+        if not self._is_authorized(update):
+            await update.message.reply_text("🔒 Unauthorized. This bot is private.")
+            return
+        
         try:
             from src.risk_management import PortfolioRiskManager, CircuitBreaker
             
@@ -208,6 +238,10 @@ class TradingAgentBot:
     
     async def stop_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /stop command"""
+        if not self._is_authorized(update):
+            await update.message.reply_text("🔒 Unauthorized. This bot is private.")
+            return
+        
         try:
             self.auto_trader.stop_automated_trading()
             await update.message.reply_text(
@@ -223,6 +257,10 @@ class TradingAgentBot:
     
     async def resume_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /resume command"""
+        if not self._is_authorized(update):
+            await update.message.reply_text("🔒 Unauthorized. This bot is private.")
+            return
+        
         try:
             self.auto_trader.is_running = True
             await update.message.reply_text(
@@ -235,14 +273,84 @@ class TradingAgentBot:
         except Exception as e:
             await update.message.reply_text(f"❌ Error: {str(e)}")
     
+    async def ml_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /ml command - Show ML model status"""
+        if not self._is_authorized(update):
+            await update.message.reply_text("🔒 Unauthorized. This bot is private.")
+            return
+        
+        try:
+            from src.ml.model_loader import MLModelLoader
+            from pathlib import Path
+            
+            loader = MLModelLoader()
+            loaded = loader.load_models()
+            
+            if loaded:
+                info = loader.get_model_info()
+                models_dir = Path(info['models_dir'])
+                
+                # Check model file dates
+                model_files = {}
+                for model_name in info['models']:
+                    model_path = models_dir / f"{model_name}_latest.pkl"
+                    if model_path.exists():
+                        mod_time = datetime.fromtimestamp(model_path.stat().st_mtime)
+                        age_days = (datetime.now() - mod_time).days
+                        model_files[model_name] = {
+                            'size_mb': model_path.stat().st_size / 1024 / 1024,
+                            'age_days': age_days,
+                            'last_updated': mod_time.strftime('%Y-%m-%d')
+                        }
+                
+                message = (
+                    "🤖 *ML Models Status*\n\n"
+                    f"✅ Status: LOADED\n"
+                    f"📊 Models: {len(info['models'])}\n\n"
+                )
+                
+                for model_name, details in model_files.items():
+                    age_emoji = "🟢" if details['age_days'] < 7 else "🟡" if details['age_days'] < 30 else "🔴"
+                    message += (
+                        f"{age_emoji} *{model_name.replace('_', ' ').title()}*\n"
+                        f"   Size: {details['size_mb']:.1f} MB\n"
+                        f"   Updated: {details['last_updated']} ({details['age_days']}d ago)\n\n"
+                    )
+                
+                if any(d['age_days'] > 30 for d in model_files.values()):
+                    message += "\n⚠️ *Some models are old. Consider retraining!*"
+                
+            else:
+                message = (
+                    "❌ *ML Models Not Found*\n\n"
+                    "Models haven't been trained yet.\n\n"
+                    "To train models:\n"
+                    "`python scripts/train_ml_models.py`\n\n"
+                    "Training takes 10-30 minutes."
+                )
+            
+            await update.message.reply_text(message, parse_mode='Markdown')
+            
+        except Exception as e:
+            logger.error(f"Error in /ml command: {e}")
+            await update.message.reply_text(
+                f"❌ Error checking ML status:\n`{str(e)}`",
+                parse_mode='Markdown'
+            )
+    
     async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /help command"""
+        if not self._is_authorized(update):
+            await update.message.reply_text("🔒 Unauthorized. This bot is private.")
+            return
+        
         await update.message.reply_text(
             "🤖 *Trading Agent Commands*\n\n"
             "/status - Get current status\n"
             "/positions - View open positions\n"
             "/pnl - Check P&L (today, week, all-time)\n"
             "/risk - View risk metrics\n"
+            "/ml - Check ML model status\n"
             "/stop - Stop automated trading\n"
             "/resume - Resume trading\n"
             "/help - Show this message\n\n"
@@ -282,6 +390,7 @@ class TradingAgentBot:
             application.add_handler(CommandHandler("positions", self.positions_command))
             application.add_handler(CommandHandler("pnl", self.pnl_command))
             application.add_handler(CommandHandler("risk", self.risk_command))
+            application.add_handler(CommandHandler("ml", self.ml_command))
             application.add_handler(CommandHandler("stop", self.stop_command))
             application.add_handler(CommandHandler("resume", self.resume_command))
             application.add_handler(CommandHandler("help", self.help_command))

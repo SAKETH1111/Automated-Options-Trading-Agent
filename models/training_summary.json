@@ -1,0 +1,120 @@
+[
+  {
+    "entry_model": {
+      "error": "Found array with 0 sample(s) (shape=(0, 39)) while a minimum of 1 is required by StandardScaler."
+    },
+    "win_probability_model": {
+      "error": "Found array with 0 sample(s) (shape=(0, 39)) while a minimum of 1 is required by StandardScaler."
+    },
+    "volatility_model": {
+      "error": "Found array with 0 sample(s) (shape=(0, 39)) while a minimum of 1 is required by StandardScaler."
+    },
+    "success": true,
+    "trained_on": 0,
+    "tested_on": 0,
+    "symbols": [
+      "SPY",
+      "QQQ"
+    ],
+    "timestamp": "2025-10-10T18:56:28.337753"
+  },
+  {
+    "entry_model": {
+      "error": "Found array with 0 sample(s) (shape=(0, 39)) while a minimum of 1 is required by StandardScaler."
+    },
+    "win_probability_model": {
+      "error": "Found array with 0 sample(s) (shape=(0, 39)) while a minimum of 1 is required by StandardScaler."
+    },
+    "volatility_model": {
+      "error": "Found array with 0 sample(s) (shape=(0, 39)) while a minimum of 1 is required by StandardScaler."
+    },
+    "success": true,
+    "trained_on": 0,
+    "tested_on": 0,
+    "symbols": [
+      "SPY",
+      "QQQ"
+    ],
+    "timestamp": "2025-10-10T18:57:24.324103"
+  },
+  {
+    "entry_model": {
+      "val_accuracy": 0.46,
+      "val_precision": 0.46938775510204084,
+      "val_recall": 0.9583333333333334,
+      "val_f1": 0.6301369863013698,
+      "val_auc": 0.453525641025641,
+      "test_accuracy": 0.6565656565656566,
+      "test_precision": 0.696969696969697,
+      "test_recall": 0.48936170212765956,
+      "test_f1": 0.575,
+      "test_auc": 0.6947626841243862,
+      "top_features": [
+        [
+          "bb_position",
+          0.12110664489661764
+        ],
+        [
+          "momentum_10",
+          0.06644222732578474
+        ],
+        [
+          "macd_hist",
+          0.06290118136740497
+        ],
+        [
+          "bb_width",
+          0.05397177192180025
+        ],
+        [
+          "distance_from_high",
+          0.047595174623092845
+        ],
+        [
+          "momentum_5",
+          0.044267724547142395
+        ],
+        [
+          "distance_from_low",
+          0.03580563564179298
+        ],
+        [
+          "rsi",
+          0.029651473501080942
+        ],
+        [
+          "macd",
+          0.028767937085273174
+        ],
+        [
+          "volatility_20",
+          0.027609031387343018
+        ]
+      ],
+      "n_features": 39
+    },
+    "win_probability_model": {
+      "val_mse": 0.015207687250260837,
+      "val_mae": 0.10003428875715312,
+      "val_r2": -0.04918901084346161,
+      "test_mse": 0.0014460113701210916,
+      "test_mae": 0.03218483535226445,
+      "test_r2": -0.2877754188094219,
+      "n_features": 39
+    },
+    "volatility_model": {
+      "val_accuracy": 0.16666666666666666,
+      "test_accuracy": 0.46835443037974683,
+      "test_mae": 0.0049700306270209745,
+      "n_features": 39
+    },
+    "success": true,
+    "trained_on": 346,
+    "tested_on": 99,
+    "symbols": [
+      "SPY",
+      "QQQ"
+    ],
+    "timestamp": "2025-10-10T18:59:57.299265"
+  }
+]
