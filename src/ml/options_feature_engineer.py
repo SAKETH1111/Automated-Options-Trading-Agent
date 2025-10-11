@@ -121,6 +121,8 @@ class OptionsFeatureEngineer:
             
         except Exception as e:
             logger.error(f"Error adding options features: {e}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             return self._add_default_features(df)
     
     def _get_atm_iv(self, options_data: List[Dict]) -> float:
