@@ -88,18 +88,24 @@ class OptionsFeatureEngineer:
             atm_call = self._get_atm_option(options_data, 'call')
             
             if atm_put:
-                df['atm_put_delta'] = abs(atm_put['greeks'].get('delta', 0.5))
-                df['atm_put_theta'] = atm_put['greeks'].get('theta', 0)
-                df['atm_put_vega'] = atm_put['greeks'].get('vega', 0)
-                df['atm_put_gamma'] = atm_put['greeks'].get('gamma', 0)
+                try:
+                    df['atm_put_delta'] = abs(float(atm_put['greeks'].get('delta', 0.5)))
+                    df['atm_put_theta'] = float(atm_put['greeks'].get('theta', 0))
+                    df['atm_put_vega'] = float(atm_put['greeks'].get('vega', 0))
+                    df['atm_put_gamma'] = float(atm_put['greeks'].get('gamma', 0))
+                except (ValueError, TypeError):
+                    df = self._add_default_greeks(df, 'put')
             else:
                 df = self._add_default_greeks(df, 'put')
             
             if atm_call:
-                df['atm_call_delta'] = atm_call['greeks'].get('delta', 0.5)
-                df['atm_call_theta'] = atm_call['greeks'].get('theta', 0)
-                df['atm_call_vega'] = atm_call['greeks'].get('vega', 0)
-                df['atm_call_gamma'] = atm_call['greeks'].get('gamma', 0)
+                try:
+                    df['atm_call_delta'] = float(atm_call['greeks'].get('delta', 0.5))
+                    df['atm_call_theta'] = float(atm_call['greeks'].get('theta', 0))
+                    df['atm_call_vega'] = float(atm_call['greeks'].get('vega', 0))
+                    df['atm_call_gamma'] = float(atm_call['greeks'].get('gamma', 0))
+                except (ValueError, TypeError):
+                    df = self._add_default_greeks(df, 'call')
             else:
                 df = self._add_default_greeks(df, 'call')
             
