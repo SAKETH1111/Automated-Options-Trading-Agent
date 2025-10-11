@@ -68,7 +68,7 @@ class PolygonDataCollector:
         Args:
             symbols: List of symbols to collect
             lookback_days: Days of historical data
-            timeframe: Bar timeframe (1Min, 5Min, 15Min, 1Hour, 1Day)
+            timeframe: Bar timeframe (1Min, 5Min, 15Min, 1Hour, 1Day, 1Week, 1Month, 3Month, 6Month, 1Year)
             
         Returns:
             DataFrame with historical data
@@ -146,6 +146,11 @@ class PolygonDataCollector:
                 "15Min": ("minute", 15),
                 "1Hour": ("hour", 1),
                 "1Day": ("day", 1),
+                "1Week": ("week", 1),
+                "1Month": ("month", 1),
+                "3Month": ("month", 3),
+                "6Month": ("month", 6),
+                "1Year": ("year", 1),
             }
             
             timespan, multiplier = timespan_map.get(timeframe, ("day", 1))

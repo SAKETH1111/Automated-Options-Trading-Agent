@@ -150,34 +150,48 @@ class MultiTimeframeTrainer:
             
             timeframe_data = {}
             
-            for symbol in symbols:
-                try:
-                    logger.info(f"Fetching {symbol} {config.timeframe} data...")
+            try:
+                logger.info(f"Fetching {config.timeframe} data for {len(symbols)} symbols...")
+                
+                # Get historical data for all symbols at once
+                data = self.data_collector.collect_training_data(
+                    symbols=symbols,
+                    timeframe=config.timeframe,
+                    lookback_days=config.lookback_days
+                )
+                
+                if data is not None and not data.empty:
+                    # Split data by symbol if necessary
+                    for symbol in symbols:
+                        try:
+                            # Filter data for this symbol
+                            if 'symbol' in data.columns:
+                                symbol_data = data[data['symbol'] == symbol].copy()
+                            else:
+                                # If no symbol column, assume all data is for this symbol
+                                symbol_data = data.copy()
+                            
+                            if len(symbol_data) > config.min_samples:
+                                # Add options features if available
+                                if self.feature_engineer is not None:
+                                    data_with_options = self.feature_engineer.add_options_features(
+                                        symbol_data, symbol, config.timeframe
+                                    )
+                                else:
+                                    data_with_options = symbol_data  # Use basic data if feature engineer not available
+                                
+                                timeframe_data[symbol] = data_with_options
+                                logger.info(f"✅ {symbol}: {len(data_with_options)} samples")
+                            else:
+                                logger.warning(f"❌ {symbol}: Insufficient data ({len(symbol_data)} samples)")
+                        except Exception as e:
+                            logger.error(f"Error processing {symbol} data: {e}")
+                            continue
+                else:
+                    logger.warning(f"No data collected for {config.timeframe}")
                     
-                    # Get historical data
-                    data = self.data_collector.collect_training_data(
-                        symbol=symbol,
-                        timeframe=config.timeframe,
-                        lookback_days=config.lookback_days
-                    )
-                    
-                    if data is not None and len(data) > config.min_samples:
-                        # Add options features if available
-                        if self.feature_engineer is not None:
-                            data_with_options = self.feature_engineer.add_options_features(
-                                data, symbol, config.timeframe
-                            )
-                        else:
-                            data_with_options = data  # Use basic data if feature engineer not available
-                        
-                        timeframe_data[symbol] = data_with_options
-                        logger.info(f"✅ {symbol}: {len(data_with_options)} samples")
-                    else:
-                        logger.warning(f"❌ {symbol}: Insufficient data ({len(data) if data is not None else 0} samples)")
-                        
-                except Exception as e:
-                    logger.error(f"Error collecting {symbol} {config.timeframe} data: {e}")
-                    continue
+            except Exception as e:
+                logger.error(f"Error collecting {config.timeframe} data: {e}")
             
             all_data[config.name] = timeframe_data
             logger.info(f"✅ {config.name}: {len(timeframe_data)} symbols collected")
