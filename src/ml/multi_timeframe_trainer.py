@@ -680,6 +680,12 @@ class MultiTimeframeTrainer:
                 logger.error(f"Failed to prepare features for {config.name}")
                 continue
             
+            # Check if we have enough class diversity
+            n_entry_classes = len(set(entry_labels))
+            if n_entry_classes < 2:
+                logger.warning(f"⚠️ Skipping {config.name} - only {n_entry_classes} class(es) in entry labels")
+                continue
+            
             # Split data
             X_train, X_test, y_entry_train, y_entry_test = train_test_split(
                 features, entry_labels, test_size=0.2, random_state=42, stratify=entry_labels
@@ -739,23 +745,28 @@ class MultiTimeframeTrainer:
                 'test_labels': y_win_test
             }
             
-            # Volatility Model
-            logger.info(f"Training volatility model for {config.name}...")
-            vol_model = GradientBoostingClassifier(
-                n_estimators=100,
-                max_depth=6,
-                random_state=42
-            )
-            vol_model.fit(X_train_scaled, y_vol_train)
-            vol_pred = vol_model.predict(X_test_scaled)
-            vol_accuracy = accuracy_score(y_vol_test, vol_pred)
-            
-            models['volatility'] = {
-                'model': vol_model,
-                'accuracy': vol_accuracy,
-                'predictions': vol_pred,
-                'test_labels': y_vol_test
-            }
+            # Volatility Model (skip if only one class)
+            n_vol_classes = len(set(y_vol_train))
+            if n_vol_classes < 2:
+                logger.warning(f"⚠️ Skipping volatility model for {config.name} - only {n_vol_classes} class(es) in data")
+                models['volatility'] = None
+            else:
+                logger.info(f"Training volatility model for {config.name}...")
+                vol_model = GradientBoostingClassifier(
+                    n_estimators=100,
+                    max_depth=6,
+                    random_state=42
+                )
+                vol_model.fit(X_train_scaled, y_vol_train)
+                vol_pred = vol_model.predict(X_test_scaled)
+                vol_accuracy = accuracy_score(y_vol_test, vol_pred)
+                
+                models['volatility'] = {
+                    'model': vol_model,
+                    'accuracy': vol_accuracy,
+                    'predictions': vol_pred,
+                    'test_labels': y_vol_test
+                }
             
             # Store models and scaler
             trained_models[config.name] = {
