@@ -223,13 +223,19 @@ class MultiTimeframeTrainer:
                 win_prob_labels_sym = self._prepare_win_probability_labels(features, config.timeframe)
                 volatility_labels_sym = self._prepare_volatility_labels(features, config.timeframe)
                 
-                # Combine data
-                all_features.append(features)
-                entry_labels.extend(entry_labels_sym)
-                win_prob_labels.extend(win_prob_labels_sym)
-                volatility_labels.extend(volatility_labels_sym)
+                # Ensure all arrays have the same length
+                min_len = min(len(entry_labels_sym), len(win_prob_labels_sym), len(volatility_labels_sym))
                 
-                logger.info(f"✅ {symbol}: {len(features)} samples prepared")
+                # Trim features to match labels (labels are shorter due to forward-looking calculation)
+                features_trimmed = features.iloc[:min_len].copy()
+                
+                # Combine data
+                all_features.append(features_trimmed)
+                entry_labels.extend(entry_labels_sym[:min_len])
+                win_prob_labels.extend(win_prob_labels_sym[:min_len])
+                volatility_labels.extend(volatility_labels_sym[:min_len])
+                
+                logger.info(f"✅ {symbol}: {len(features_trimmed)} samples prepared")
                 
             except Exception as e:
                 logger.error(f"Error preparing {symbol} features: {e}")

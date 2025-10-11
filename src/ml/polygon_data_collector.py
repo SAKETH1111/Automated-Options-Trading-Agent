@@ -84,8 +84,8 @@ class PolygonDataCollector:
                 # Add delay between requests to avoid rate limiting
                 if i > 0:
                     import time
-                    time.sleep(2)  # 2 second delay between symbols
-                    logger.debug(f"Rate limit delay (2s)...")
+                    time.sleep(12)  # 12 second delay between symbols to avoid 429 errors
+                    logger.info(f"⏳ Rate limit delay (12s)...")
                 
                 df = self._fetch_bars(symbol, lookback_days, timeframe)
                 
@@ -134,46 +134,71 @@ class PolygonDataCollector:
         lookback_days: int,
         timeframe: str
     ) -> pd.DataFrame:
-        """Fetch historical bars from Polygon"""
+        """Fetch historical bars from Polygon with retry logic"""
+        import time
+        
+        max_retries = 3
+        retry_delay = 30  # Start with 30 seconds
+        
+        for attempt in range(max_retries):
+            try:
+                end_date = datetime.now()
+                start_date = end_date - timedelta(days=lookback_days)
+                
+                # Map timeframe to Polygon format
+                timespan_map = {
+                    "1Min": ("minute", 1),
+                    "5Min": ("minute", 5),
+                    "15Min": ("minute", 15),
+                    "1Hour": ("hour", 1),
+                    "1Day": ("day", 1),
+                    "1Week": ("week", 1),
+                    "1Month": ("month", 1),
+                    "3Month": ("month", 3),
+                    "6Month": ("month", 6),
+                    "1Year": ("year", 1),
+                }
+                
+                timespan, multiplier = timespan_map.get(timeframe, ("day", 1))
+                
+                logger.info(f"Fetching {symbol} from {start_date.date()} to {end_date.date()} ({multiplier} {timespan} bars)")
+                
+                # Fetch aggregates from Polygon
+                aggs = []
+                for agg in self.client.list_aggs(
+                    ticker=symbol,
+                    multiplier=multiplier,
+                    timespan=timespan,
+                    from_=start_date.strftime("%Y-%m-%d"),
+                    to=end_date.strftime("%Y-%m-%d"),
+                    limit=50000
+                ):
+                    aggs.append(agg)
+                
+                # If we got here, request succeeded
+                break
+                
+            except Exception as e:
+                error_str = str(e)
+                if "429" in error_str or "too many" in error_str.lower():
+                    if attempt < max_retries - 1:
+                        wait_time = retry_delay * (attempt + 1)  # Exponential backoff
+                        logger.warning(f"⚠️ Rate limited for {symbol}. Waiting {wait_time}s before retry {attempt + 1}/{max_retries}...")
+                        time.sleep(wait_time)
+                        continue
+                    else:
+                        logger.error(f"❌ Max retries exceeded for {symbol}: {e}")
+                        return pd.DataFrame()
+                else:
+                    # Not a rate limit error, just fail
+                    raise
+        
+        # Convert to DataFrame (outside retry loop)
         try:
-            end_date = datetime.now()
-            start_date = end_date - timedelta(days=lookback_days)
-            
-            # Map timeframe to Polygon format
-            timespan_map = {
-                "1Min": ("minute", 1),
-                "5Min": ("minute", 5),
-                "15Min": ("minute", 15),
-                "1Hour": ("hour", 1),
-                "1Day": ("day", 1),
-                "1Week": ("week", 1),
-                "1Month": ("month", 1),
-                "3Month": ("month", 3),
-                "6Month": ("month", 6),
-                "1Year": ("year", 1),
-            }
-            
-            timespan, multiplier = timespan_map.get(timeframe, ("day", 1))
-            
-            logger.info(f"Fetching {symbol} from {start_date.date()} to {end_date.date()} ({multiplier} {timespan} bars)")
-            
-            # Fetch aggregates from Polygon
-            aggs = []
-            for agg in self.client.list_aggs(
-                ticker=symbol,
-                multiplier=multiplier,
-                timespan=timespan,
-                from_=start_date.strftime("%Y-%m-%d"),
-                to=end_date.strftime("%Y-%m-%d"),
-                limit=50000
-            ):
-                aggs.append(agg)
-            
             if not aggs:
                 logger.warning(f"No data returned from Polygon for {symbol}")
                 return pd.DataFrame()
             
-            # Convert to DataFrame
             data = []
             for agg in aggs:
                 data.append({
@@ -193,7 +218,7 @@ class PolygonDataCollector:
             return df
             
         except Exception as e:
-            logger.error(f"Error fetching bars from Polygon for {symbol}: {e}")
+            logger.error(f"Error processing bars from Polygon for {symbol}: {e}")
             import traceback
             logger.error(traceback.format_exc())
             return pd.DataFrame()
