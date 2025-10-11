@@ -747,6 +747,8 @@ class MultiTimeframeTrainer:
             
             # Volatility Model (skip if only one class)
             n_vol_classes = len(set(y_vol_train))
+            vol_accuracy = None  # Initialize to None
+            
             if n_vol_classes < 2:
                 logger.warning(f"⚠️ Skipping volatility model for {config.name} - only {n_vol_classes} class(es) in data")
                 models['volatility'] = None
