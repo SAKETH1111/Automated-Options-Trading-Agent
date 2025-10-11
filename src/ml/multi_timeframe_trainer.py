@@ -155,7 +155,7 @@ class MultiTimeframeTrainer:
                     logger.info(f"Fetching {symbol} {config.timeframe} data...")
                     
                     # Get historical data
-                    data = self.data_collector.collect_historical_data(
+                    data = self.data_collector.collect_training_data(
                         symbol=symbol,
                         timeframe=config.timeframe,
                         lookback_days=config.lookback_days
