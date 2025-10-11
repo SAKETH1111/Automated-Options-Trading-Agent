@@ -184,20 +184,30 @@ class OptionsFeatureEngineer:
         """Calculate IV skew (OTM puts vs OTM calls)"""
         try:
             # Get OTM put IVs (delta around -0.25)
-            otm_put_ivs = [opt.get('implied_volatility', 0)
-                          for opt in options_data
-                          if opt.get('type') == 'put'
-                          and opt.get('greeks', {}).get('delta')
-                          and -0.35 < opt['greeks']['delta'] < -0.15
-                          and opt.get('implied_volatility')]
+            otm_put_ivs = []
+            for opt in options_data:
+                if (opt.get('type') == 'put' 
+                    and opt.get('greeks', {}).get('delta')
+                    and opt.get('implied_volatility')):
+                    try:
+                        delta = float(opt['greeks']['delta'])
+                        if -0.35 < delta < -0.15:
+                            otm_put_ivs.append(opt['implied_volatility'])
+                    except (ValueError, TypeError):
+                        continue
             
             # Get OTM call IVs (delta around 0.25)
-            otm_call_ivs = [opt.get('implied_volatility', 0)
-                           for opt in options_data
-                           if opt.get('type') == 'call'
-                           and opt.get('greeks', {}).get('delta')
-                           and 0.15 < opt['greeks']['delta'] < 0.35
-                           and opt.get('implied_volatility')]
+            otm_call_ivs = []
+            for opt in options_data:
+                if (opt.get('type') == 'call'
+                    and opt.get('greeks', {}).get('delta')
+                    and opt.get('implied_volatility')):
+                    try:
+                        delta = float(opt['greeks']['delta'])
+                        if 0.15 < delta < 0.35:
+                            otm_call_ivs.append(opt['implied_volatility'])
+                    except (ValueError, TypeError):
+                        continue
             
             if otm_put_ivs and otm_call_ivs:
                 avg_put_iv = np.mean(otm_put_ivs)
