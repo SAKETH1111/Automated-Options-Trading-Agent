@@ -32,7 +32,7 @@ def main():
     print()
     
     # Configuration
-    symbols = ['SPY', 'QQQ']  # Can add more: ['SPY', 'QQQ', 'IWM', 'DIA']
+    symbols = ['SPY', 'QQQ', 'IWM', 'DIA', 'XLF', 'XLE']  # Expanded to 6 symbols!
     lookback_days = 730  # 2 years of data for better ML training
     strategy = 'bull_put_spread'  # Strategy to optimize for
     timeframe = '1Day'  # Use daily data (more reliable than intraday)
