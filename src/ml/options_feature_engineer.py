@@ -77,11 +77,11 @@ class OptionsFeatureEngineer:
             avg_delta_30 = self._get_avg_delta(options_data, delta_target=0.30)
             total_oi = self._get_total_open_interest(options_data)
             
-            # Add to all rows (static snapshot)
-            df['atm_iv'] = atm_iv
-            df['put_call_ratio'] = put_call_ratio
-            df['avg_delta_30'] = avg_delta_30
-            df['total_open_interest'] = total_oi
+            # Add to all rows (static snapshot) - ensure all are numeric
+            df['atm_iv'] = float(atm_iv)
+            df['put_call_ratio'] = float(put_call_ratio)
+            df['avg_delta_30'] = float(avg_delta_30)
+            df['total_open_interest'] = float(total_oi)
             
             # Get ATM put/call Greeks
             atm_put = self._get_atm_option(options_data, 'put')
