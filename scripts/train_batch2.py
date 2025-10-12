@@ -56,7 +56,7 @@ def main():
         adaptive_learner = AdaptiveLearner()
         
         # Get updated performance
-        performance = adaptive_learner.get_performance_report()
+        performance = adaptive_learner.get_model_performance_report()
         logger.info(f"📈 Updated Performance Report:")
         logger.info(f"   Total Models: {performance.get('total_models', 0)}")
         logger.info(f"   Avg Accuracy: {performance.get('avg_accuracy', 0):.3f}")
