@@ -61,7 +61,7 @@ def main():
         logger.info(f"   Avg R² Score: {performance.get('avg_r2', 0):.3f}")
         
         # Run auto-retraining check
-        retraining_results = adaptive_learner.auto_retrain_models()
+        retraining_results = adaptive_learner.auto_retrain_models(symbols=symbols)
         logger.info(f"🔄 Auto-retraining: {retraining_results['successful']}/{retraining_results['total']} successful")
         
         logger.info("✅ Adaptive learning system ready")

@@ -62,6 +62,7 @@ def main():
         logger.info(f"   Avg Accuracy: {performance.get('avg_accuracy', 0):.3f}")
         logger.info(f"   Avg R² Score: {performance.get('avg_r2', 0):.3f}")
         
+        # Note: Auto-retraining not needed for batch 2 (models already trained in batch 1)
         logger.info("✅ Adaptive learning system updated")
         
         # Summary
