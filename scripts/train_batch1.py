@@ -62,7 +62,9 @@ def main():
         
         # Run auto-retraining check
         retraining_results = adaptive_learner.auto_retrain_models(symbols=symbols)
-        logger.info(f"🔄 Auto-retraining: {retraining_results['successful']}/{retraining_results['total']} successful")
+        successful = sum(retraining_results.values()) if retraining_results else 0
+        total = len(retraining_results) if retraining_results else 0
+        logger.info(f"🔄 Auto-retraining: {successful}/{total} successful")
         
         logger.info("✅ Adaptive learning system ready")
         
