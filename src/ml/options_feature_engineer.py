@@ -71,49 +71,82 @@ class OptionsFeatureEngineer:
                 logger.warning(f"No options data for {symbol}, using defaults")
                 return self._add_default_features(df)
             
-            # Calculate aggregate metrics
+            # Calculate aggregate metrics with detailed logging
+            logger.debug(f"Calculating ATM IV for {symbol}...")
             atm_iv = self._get_atm_iv(options_data)
+            logger.debug(f"  ATM IV: {atm_iv} (type: {type(atm_iv)})")
+            
+            logger.debug(f"Calculating put/call ratio for {symbol}...")
             put_call_ratio = self._calculate_put_call_ratio(options_data)
+            logger.debug(f"  Put/Call Ratio: {put_call_ratio} (type: {type(put_call_ratio)})")
+            
+            logger.debug(f"Calculating avg delta for {symbol}...")
             avg_delta_30 = self._get_avg_delta(options_data, delta_target=0.30)
+            logger.debug(f"  Avg Delta: {avg_delta_30} (type: {type(avg_delta_30)})")
+            
+            logger.debug(f"Calculating total OI for {symbol}...")
             total_oi = self._get_total_open_interest(options_data)
+            logger.debug(f"  Total OI: {total_oi} (type: {type(total_oi)})")
             
             # Add to all rows (static snapshot) - ensure all are numeric
+            logger.debug(f"Adding aggregate metrics to dataframe...")
             df['atm_iv'] = float(atm_iv)
             df['put_call_ratio'] = float(put_call_ratio)
             df['avg_delta_30'] = float(avg_delta_30)
             df['total_open_interest'] = float(total_oi)
+            logger.debug(f"  Aggregate metrics added successfully")
             
             # Get ATM put/call Greeks
+            logger.debug(f"Getting ATM options for {symbol}...")
             atm_put = self._get_atm_option(options_data, 'put')
             atm_call = self._get_atm_option(options_data, 'call')
+            logger.debug(f"  ATM Put: {atm_put is not None}, ATM Call: {atm_call is not None}")
             
             if atm_put:
                 try:
+                    logger.debug(f"  Processing ATM put Greeks...")
+                    logger.debug(f"    Raw delta: {atm_put['greeks'].get('delta')} (type: {type(atm_put['greeks'].get('delta'))})")
                     df['atm_put_delta'] = abs(float(atm_put['greeks'].get('delta', 0.5)))
                     df['atm_put_theta'] = float(atm_put['greeks'].get('theta', 0))
                     df['atm_put_vega'] = float(atm_put['greeks'].get('vega', 0))
                     df['atm_put_gamma'] = float(atm_put['greeks'].get('gamma', 0))
-                except (ValueError, TypeError):
+                    logger.debug(f"  ATM put Greeks added successfully")
+                except (ValueError, TypeError) as e:
+                    logger.warning(f"  Failed to add ATM put Greeks: {e}, using defaults")
                     df = self._add_default_greeks(df, 'put')
             else:
+                logger.debug(f"  No ATM put found, using defaults")
                 df = self._add_default_greeks(df, 'put')
             
             if atm_call:
                 try:
+                    logger.debug(f"  Processing ATM call Greeks...")
+                    logger.debug(f"    Raw delta: {atm_call['greeks'].get('delta')} (type: {type(atm_call['greeks'].get('delta'))})")
                     df['atm_call_delta'] = float(atm_call['greeks'].get('delta', 0.5))
                     df['atm_call_theta'] = float(atm_call['greeks'].get('theta', 0))
                     df['atm_call_vega'] = float(atm_call['greeks'].get('vega', 0))
                     df['atm_call_gamma'] = float(atm_call['greeks'].get('gamma', 0))
-                except (ValueError, TypeError):
+                    logger.debug(f"  ATM call Greeks added successfully")
+                except (ValueError, TypeError) as e:
+                    logger.warning(f"  Failed to add ATM call Greeks: {e}, using defaults")
                     df = self._add_default_greeks(df, 'call')
             else:
+                logger.debug(f"  No ATM call found, using defaults")
                 df = self._add_default_greeks(df, 'call')
             
             # Calculate skew
-            df['iv_skew'] = self._calculate_skew(options_data)
+            logger.debug(f"Calculating IV skew for {symbol}...")
+            iv_skew = self._calculate_skew(options_data)
+            logger.debug(f"  IV Skew: {iv_skew} (type: {type(iv_skew)})")
+            df['iv_skew'] = float(iv_skew)
+            logger.debug(f"  IV skew added successfully")
             
             # Volume metrics
-            df['option_volume'] = self._get_total_volume(options_data)
+            logger.debug(f"Calculating total volume for {symbol}...")
+            option_volume = self._get_total_volume(options_data)
+            logger.debug(f"  Option Volume: {option_volume} (type: {type(option_volume)})")
+            df['option_volume'] = float(option_volume)
+            logger.debug(f"  Option volume added successfully")
             
             logger.info(f"Added {8 + len([c for c in df.columns if 'atm_' in c])} options features")
             
