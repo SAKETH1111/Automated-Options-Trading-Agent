@@ -476,35 +476,40 @@ risk_tolerance:
   adjust_based_on:
     # 1. Recent performance
     recent_win_rate:
-      - if: win_rate > 75% (last 10 trades)
-        then: increase_risk_by: 10%
-      - if: win_rate < 60% (last 10 trades)
-        then: decrease_risk_by: 30%
+      - if: "win_rate > 75% (last 10 trades)"
+        then:
+          increase_risk_by: 10
+      - if: "win_rate < 60% (last 10 trades)"
+        then:
+          decrease_risk_by: 30
     
     # 2. Drawdown level
     current_drawdown:
-      - if: drawdown < 5%
-        then: maintain_risk
-      - if: drawdown > 10%
-        then: reduce_risk_by: 50%
-      - if: drawdown > 15%
-        then: pause_trading
+      - if: "drawdown < 5%"
+        then: "maintain_risk"
+      - if: "drawdown > 10%"
+        then:
+          reduce_risk_by: 50
+      - if: "drawdown > 15%"
+        then: "pause_trading"
     
     # 3. Market volatility
     vix_level:
-      - if: vix < 15
-        then: reduce_risk_by: 20%  # Low premium environment
-      - if: vix > 25
-        then: reduce_risk_by: 20%  # High risk environment
-      - if: vix between [18, 25]
-        then: maintain_risk  # Sweet spot
+      - if: "vix < 15"
+        then:
+          reduce_risk_by: 20  # Low premium environment
+      - if: "vix > 25"
+        then:
+          reduce_risk_by: 20  # High risk environment
+      - if: "vix between [18, 25]"
+        then: "maintain_risk"  # Sweet spot
     
     # 4. Time in market
     experience_level:
-      - if: total_trades < 20
-        then: use_conservative_risk
-      - if: total_trades > 50 and win_rate > 70%
-        then: allow_increased_risk
+      - if: "total_trades < 20"
+        then: "use_conservative_risk"
+      - if: "total_trades > 50 and win_rate > 70%"
+        then: "allow_increased_risk"
 
 # Position Management
 position_management:
