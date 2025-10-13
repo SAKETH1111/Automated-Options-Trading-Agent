@@ -82,12 +82,13 @@ class TradingOrchestrator:
                 strategy_config
             )
         
-        # Market hours configuration
+        # Market hours configuration - Central Time (Texas)
         trading_config = self.config.get("trading", {})
         market_hours = trading_config.get("market_hours", {})
-        self.market_timezone = pytz.timezone(market_hours.get("timezone", "America/New_York"))
-        self.market_open = dt_time.fromisoformat(market_hours.get("start", "09:30"))
-        self.market_close = dt_time.fromisoformat(market_hours.get("end", "16:00"))
+        self.market_timezone = pytz.timezone(market_hours.get("timezone", "America/Chicago"))
+        # Market times in Central Time: 8:30 AM - 3:00 PM CT (9:30 AM - 4:00 PM ET)
+        self.market_open = dt_time(8, 30)  # 9:30 ET = 8:30 CT
+        self.market_close = dt_time(15, 0)  # 16:00 ET = 15:00 CT
         
         # Scheduler
         self.scheduler = BackgroundScheduler()
@@ -157,46 +158,46 @@ class TradingOrchestrator:
             logger.error(f"Error stopping trading agent: {e}")
     
     def _schedule_tasks(self):
-        """Schedule recurring tasks"""
-        # Every 5 minutes during market hours: scan and monitor
+        """Schedule recurring tasks (times in Central Time)"""
+        # Every 5 minutes during market hours: scan and monitor (8:30 AM - 3:00 PM CT)
         self.scheduler.add_job(
             self.run_trading_cycle,
             'cron',
             day_of_week='mon-fri',
-            hour='9-16',
+            hour='8-15',
             minute='*/5',
             timezone=self.market_timezone,
             id='trading_cycle'
         )
         
-        # Every 1 minute during market hours: monitor positions
+        # Every 1 minute during market hours: monitor positions (8:30 AM - 3:00 PM CT)
         self.scheduler.add_job(
             self.monitor_positions,
             'cron',
             day_of_week='mon-fri',
-            hour='9-16',
+            hour='8-15',
             minute='*',
             timezone=self.market_timezone,
             id='position_monitor'
         )
         
-        # Daily after market close: analyze trades and learn
+        # Daily after market close: analyze trades and learn (4:00 PM CT)
         self.scheduler.add_job(
             self.daily_analysis,
             'cron',
             day_of_week='mon-fri',
-            hour='17',
+            hour='16',
             minute='0',
             timezone=self.market_timezone,
             id='daily_analysis'
         )
         
-        # Weekly Sunday evening: deep learning analysis
+        # Weekly Sunday evening: deep learning analysis (7:00 PM CT)
         self.scheduler.add_job(
             self.weekly_learning,
             'cron',
             day_of_week='sun',
-            hour='20',
+            hour='19',
             minute='0',
             timezone=self.market_timezone,
             id='weekly_learning'

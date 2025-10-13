@@ -161,10 +161,10 @@ class RobustRealTimeCollector:
             min_success_rate=0.85
         )
         
-        # Market hours
-        self.market_timezone = pytz.timezone("America/New_York")
-        self.market_open = dt_time(9, 30)
-        self.market_close = dt_time(16, 0)
+        # Market hours - Central Time (Texas)
+        self.market_timezone = pytz.timezone("America/Chicago")
+        self.market_open = dt_time(8, 30)  # 9:30 ET = 8:30 CT
+        self.market_close = dt_time(15, 0)  # 16:00 ET = 15:00 CT
         
         # Statistics
         self.stats = {

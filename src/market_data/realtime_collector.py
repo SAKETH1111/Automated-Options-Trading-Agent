@@ -58,10 +58,10 @@ class RealTimeDataCollector:
             symbol: deque(maxlen=300) for symbol in self.symbols  # 5 minutes at 1 tick/sec
         }
         
-        # Market hours
-        self.market_timezone = pytz.timezone("America/New_York")
-        self.market_open = dt_time(9, 30)
-        self.market_close = dt_time(16, 0)
+        # Market hours - Note: Market times are still ET (9:30-16:00 ET), but we store in Central Time
+        self.market_timezone = pytz.timezone("America/Chicago")  # Central Time (Texas)
+        self.market_open = dt_time(8, 30)  # 9:30 ET = 8:30 CT
+        self.market_close = dt_time(15, 0)  # 16:00 ET = 15:00 CT
         
         # Statistics
         self.stats = {
@@ -134,7 +134,7 @@ class RealTimeDataCollector:
                         self.stats['collection_errors'] += 1
                 
                 # Update stats
-                self.stats['last_collection_time'] = datetime.now()
+                self.stats['last_collection_time'] = datetime.now(self.market_timezone)
                 
                 # Flush buffer if full
                 if len(self._tick_buffer) >= self.buffer_size:
@@ -211,7 +211,7 @@ class RealTimeDataCollector:
             # Create tick data object
             tick_data = IndexTickData(
                 symbol=symbol,
-                timestamp=datetime.now(),
+                timestamp=datetime.now(self.market_timezone),
                 price=price,
                 bid=bid,
                 ask=ask,
@@ -235,7 +235,7 @@ class RealTimeDataCollector:
             # Update previous tick
             self._previous_ticks[symbol] = {
                 'price': price,
-                'timestamp': datetime.now()
+                'timestamp': datetime.now(self.market_timezone)
             }
             
             # Update stats
@@ -304,8 +304,8 @@ class RealTimeDataCollector:
             if now.weekday() >= 5:
                 return "closed"
             
-            pre_market_open = dt_time(4, 0)
-            after_hours_close = dt_time(20, 0)
+            pre_market_open = dt_time(3, 0)  # 4:00 ET = 3:00 CT
+            after_hours_close = dt_time(19, 0)  # 20:00 ET = 19:00 CT
             
             if current_time < pre_market_open:
                 return "closed"

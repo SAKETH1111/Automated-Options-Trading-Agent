@@ -224,25 +224,25 @@ class AutomatedSignalGenerator:
         Returns:
             True if should trade
         """
-        # Get current time in ET (Eastern Time)
+        # Get current time in CT (Central Time - Texas)
         import pytz
-        et_tz = pytz.timezone('America/New_York')
-        current_et = datetime.now(pytz.UTC).astimezone(et_tz)
-        current_hour = current_et.hour
-        current_minute = current_et.minute
+        ct_tz = pytz.timezone('America/Chicago')
+        current_ct = datetime.now(pytz.UTC).astimezone(ct_tz)
+        current_hour = current_ct.hour
+        current_minute = current_ct.minute
         
-        # Only trade during market hours (9:30 AM - 4:00 PM ET)
-        if current_hour < 9 or current_hour >= 16:
-            logger.debug(f"Outside market hours (Current ET: {current_et.strftime('%H:%M')})")
+        # Only trade during market hours (8:30 AM - 3:00 PM CT = 9:30 AM - 4:00 PM ET)
+        if current_hour < 8 or current_hour >= 15:
+            logger.debug(f"Outside market hours (Current CT: {current_ct.strftime('%H:%M')})")
             return False
         
-        # Avoid first 15 minutes (high volatility)
-        if current_hour == 9 and current_minute < 45:
-            logger.debug(f"Too close to market open (Current ET: {current_et.strftime('%H:%M')})")
+        # Avoid first 15 minutes (high volatility) - 8:30-8:45 CT
+        if current_hour == 8 and current_minute < 45:
+            logger.debug(f"Too close to market open (Current CT: {current_ct.strftime('%H:%M')})")
             return False
         
-        # Avoid last 15 minutes (closing volatility)
-        if current_hour == 15 and current_minute >= 45:
+        # Avoid last 15 minutes (closing volatility) - after 2:45 PM CT
+        if current_hour == 14 and current_minute >= 45:
             logger.debug("Too close to market close")
             return False
         

@@ -6,7 +6,7 @@ trading:
   market_hours:
     start: "09:30"
     end: "16:00"
-    timezone: "America/New_York"
+    timezone: "America/Chicago"  # Central Time (Texas)
   
   # 🚨 PDT COMPLIANCE SETTINGS
   pdt_compliance:
