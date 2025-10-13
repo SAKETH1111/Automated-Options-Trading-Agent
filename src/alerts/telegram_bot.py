@@ -89,6 +89,11 @@ class TradingAgentBot:
             pdt_manager = PDTComplianceManager(account_balance)
             pdt_info = pdt_manager.get_pdt_status()
             
+            # Get smart symbols for account size
+            from src.utils.symbol_selector import get_symbols_for_account, get_symbol_info
+            smart_symbols = get_symbols_for_account(account_balance)
+            symbol_info = get_symbol_info(account_balance)
+            
             # Get trading status
             status = self.auto_trader.get_status()
             
@@ -108,6 +113,12 @@ class TradingAgentBot:
             else:
                 pdt_emoji = "🔵"
             
+            # Convert UTC to CDT
+            import pytz
+            utc_now = datetime.now(pytz.UTC)
+            cdt_tz = pytz.timezone('America/Chicago')
+            cdt_time = utc_now.astimezone(cdt_tz)
+            
             message = (
                 "📊 Trading Agent Status\n\n"
                 f"🤖 Trading: {'✅ ACTIVE' if status['is_running'] else '⏸️ PAUSED'}\n"
@@ -118,8 +129,10 @@ class TradingAgentBot:
                 f"{pdt_emoji} PDT Status: {pdt_info.status.value.upper()}\n"
                 f"⚡ Day Trades: {pdt_info.day_trades_used}/{pdt_info.max_day_trades}\n"
                 f"📅 Positions Today: {portfolio.get('total_positions', 0)}/1\n\n"
-                f"📊 Symbols: {', '.join(status['symbols'])}\n"
-                f"⏰ {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                f"🎯 Account Tier: {symbol_info['tier'].upper()}\n"
+                f"📊 Smart Symbols: {', '.join(smart_symbols)}\n"
+                f"💲 Max Stock Price: ${symbol_info['max_stock_price']}\n\n"
+                f"⏰ {cdt_time.strftime('%Y-%m-%d %H:%M:%S %Z')}"
             )
             
             await update.message.reply_text(message)

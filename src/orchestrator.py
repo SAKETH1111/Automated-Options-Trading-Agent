@@ -22,6 +22,7 @@ from src.monitoring.logger import setup_logging
 from src.risk.manager import RiskManager
 from src.risk_management.pdt_compliance import PDTComplianceManager
 from src.signals.generator import SignalGenerator
+from src.utils.symbol_selector import get_symbols_for_account, get_symbol_info
 
 
 class TradingOrchestrator:
@@ -50,6 +51,16 @@ class TradingOrchestrator:
         account_balance = float(account.get("equity", 0))
         self.pdt_manager = PDTComplianceManager(account_balance)
         
+        # Smart symbol selection based on account size
+        self.watchlist = get_symbols_for_account(account_balance)
+        symbol_info = get_symbol_info(account_balance)
+        logger.info(f"📊 Smart Symbol Selection:")
+        logger.info(f"   Account: ${account_balance:,.2f}")
+        logger.info(f"   Tier: {symbol_info['tier']}")
+        logger.info(f"   Symbols: {', '.join(self.watchlist)}")
+        logger.info(f"   Max Stock Price: ${symbol_info['max_stock_price']}")
+        logger.info(f"   Spread Width: {symbol_info['preferred_spread_width']}")
+        
         self.signal_generator = SignalGenerator(self.market_data, self.config)
         self.trade_executor = TradeExecutor(self.alpaca, self.risk_manager, self.config)
         self.position_monitor = PositionMonitor(self.market_data)
@@ -57,11 +68,10 @@ class TradingOrchestrator:
         self.trade_analyzer = TradeAnalyzer()
         self.strategy_learner = StrategyLearner(self.config)
         
-        # Initialize real-time data collector
-        watchlist = self.config.get("scanning", {}).get("watchlist", ["SPY", "QQQ"])
+        # Initialize real-time data collector with smart symbols
         realtime_config = self.config.get("realtime_data", {})
         self.realtime_collector = RealTimeDataCollector(
-            symbols=watchlist,
+            symbols=self.watchlist,
             alpaca_client=self.alpaca,
             collect_interval=realtime_config.get("collect_interval_seconds", 1.0),
             buffer_size=realtime_config.get("buffer_size", 100)
