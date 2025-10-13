@@ -35,29 +35,34 @@ def main():
         logger.info(f"💰 Account Balance: ${account_balance:,.2f}")
         logger.info(f"📊 Trading Symbols: {', '.join(symbols)}")
         
-        # Initialize automated trader
-        trader = AutomatedTrader(
-            db=db,
-            alpaca_client=alpaca,
-            symbols=symbols
-        )
+        # Get a database session (keep it open for the lifetime of the trader)
+        session = db.SessionLocal()
         
-        logger.info("✅ Automated Trader initialized")
-        
-        # Start trading
-        trader.start()
-        logger.info("🎯 Trading agent is now ACTIVE")
-        logger.info("📱 Monitor via Telegram bot: /status")
-        
-        # Keep running
         try:
+            # Initialize automated trader
+            trader = AutomatedTrader(
+                db_session=session,
+                alpaca_client=alpaca,
+                symbols=symbols
+            )
+            
+            logger.info("✅ Automated Trader initialized")
+            
+            # Start trading
+            trader.start()
+            logger.info("🎯 Trading agent is now ACTIVE")
+            logger.info("📱 Monitor via Telegram bot: /status")
+            
+            # Keep running
             while True:
                 time.sleep(60)  # Check every minute
-                
+                    
         except KeyboardInterrupt:
             logger.info("\n⏸️  Stopping trading agent...")
             trader.stop()
             logger.info("✅ Trading agent stopped")
+        finally:
+            session.close()
             
     except Exception as e:
         logger.error(f"❌ Error starting trading agent: {e}")

@@ -94,8 +94,17 @@ class TradingAgentBot:
             smart_symbols = get_symbols_for_account(account_balance)
             symbol_info = get_symbol_info(account_balance)
             
-            # Get trading status
-            status = self.auto_trader.get_status()
+            # Check if trading process is actually running
+            import subprocess
+            try:
+                result = subprocess.run(
+                    ['pgrep', '-f', 'start_trading.py'],
+                    capture_output=True,
+                    text=True
+                )
+                is_trading_active = bool(result.stdout.strip())
+            except:
+                is_trading_active = False
             
             # Get open positions
             from src.automation.position_manager import AutomatedPositionManager
@@ -119,9 +128,15 @@ class TradingAgentBot:
             cdt_tz = pytz.timezone('America/Chicago')
             cdt_time = utc_now.astimezone(cdt_tz)
             
+            # Trading status with process check
+            if is_trading_active:
+                trading_status = "✅ ACTIVE (Scanning Markets)"
+            else:
+                trading_status = "⏸️ PAUSED (Not Running)"
+            
             message = (
                 "📊 Trading Agent Status\n\n"
-                f"🤖 Trading: {'✅ ACTIVE' if status['is_running'] else '⏸️ PAUSED'}\n"
+                f"🤖 Trading: {trading_status}\n"
                 f"💰 Account: ${account_balance:,.2f}\n"
                 f"💵 Cash: ${float(account.get('cash', 0)):,.2f}\n"
                 f"📈 Open Positions: {portfolio.get('total_positions', 0)}\n"
@@ -134,6 +149,10 @@ class TradingAgentBot:
                 f"💲 Max Stock Price: ${symbol_info['max_stock_price']}\n\n"
                 f"⏰ {cdt_time.strftime('%Y-%m-%d %H:%M:%S %Z')}"
             )
+            
+            # Add warning if not running
+            if not is_trading_active:
+                message += "\n\n⚠️ Trading agent is not running!\nStart it with: nohup python3 scripts/start_trading.py > trading.log 2>&1 &"
             
             await update.message.reply_text(message)
             
