@@ -1,0 +1,186 @@
+# 🚨 PDT-COMPLIANT Configuration for Small Accounts (< $25K)
+# Automatically enforces Pattern Day Trader rules
+
+trading:
+  mode: paper
+  market_hours:
+    start: "09:30"
+    end: "16:00"
+    timezone: "America/New_York"
+  
+  # 🚨 PDT COMPLIANCE SETTINGS
+  pdt_compliance:
+    enabled: true
+    min_pdt_account_balance: 25000  # Below this = PDT restrictions apply
+    
+    # PDT Rule Enforcement
+    max_day_trades_per_5_days: 3  # STRICT LIMIT
+    day_trade_definition: "open_and_close_same_day"  # Any round-trip trade
+    
+    # Position Holding Requirements
+    minimum_hold_time: "overnight"  # Must hold positions overnight
+    no_same_day_close: true  # Cannot close position same day as open
+    
+    # Trade Frequency Limits
+    max_new_positions_per_day: 1  # Only 1 new position per day
+    max_trades_per_week: 3  # Maximum 3 total trades per week
+    
+    # Risk Management (Conservative for PDT accounts)
+    risk:
+      max_daily_loss_pct: 10.0  # More conservative for small accounts
+      max_position_size_pct: 15.0  # Smaller positions
+      max_portfolio_heat: 20.0  # Lower total risk
+      stop_loss_pct: 75  # Tighter stops
+      take_profit_pct: 40  # Take profits faster
+
+# PDT-Compliant Strategy Selection
+strategies:
+  # Strategy 1: Swing Bull Put Spreads (Primary for PDT accounts)
+  swing_bull_put_spread:
+    enabled: true
+    
+    # DTE Requirements (PDT Compliance)
+    dte_range: [14, 45]  # Minimum 14 DTE (2+ weeks)
+    preferred_dte: [21, 30]  # 3-4 week positions
+    avoid_weekly: true  # No weekly options (too risky for PDT)
+    
+    # Entry Rules
+    entry_time: "10:00-14:00"  # Avoid opening/closing volatility
+    no_friday_entries: true  # Avoid weekend gap risk
+    
+    # Exit Rules (PDT Compliance)
+    exit_time: "10:00-15:30"  # Must exit before close
+    hold_overnight_required: true  # Cannot close same day
+    min_hold_days: 1  # Must hold at least overnight
+    
+    # Risk Parameters
+    max_risk_per_trade_pct: 8.0  # Conservative for small accounts
+    delta_range: [-0.25, -0.20]  # Conservative delta
+    width_range: [2, 5]  # Narrower spreads for small accounts
+    min_credit: 0.30  # Minimum credit requirement
+
+  # Strategy 2: Monthly Iron Condors (Range-bound markets)
+  monthly_iron_condor:
+    enabled: true
+    min_account_balance: 5000  # Only for larger small accounts
+    
+    dte_range: [30, 45]  # Monthly only
+    hold_required: true  # Must hold overnight
+    
+    # Conservative parameters
+    max_risk_per_trade_pct: 5.0
+    short_delta_range: [-0.15, -0.12]
+    short_call_delta_range: [0.12, 0.15]
+    width: 3  # Narrow spreads
+    min_credit: 0.40
+
+# Account Size Adaptations
+account_adaptations:
+  # Micro Account ($1K-$2.5K)
+  micro_tier:
+    max_positions: 1  # Only 1 position at a time
+    max_weekly_trades: 2  # Very conservative
+    preferred_symbols: ["EWZ", "GDX", "F"]  # Low-priced stocks
+    max_stock_price: 35
+    spread_width: [1, 2]  # Very narrow spreads
+    
+  # Small Account ($2.5K-$5K)
+  small_tier:
+    max_positions: 1  # Still only 1 position
+    max_weekly_trades: 2  # Conservative
+    preferred_symbols: ["GDX", "XLF", "TLT"]
+    max_stock_price: 100
+    spread_width: [2, 3]
+    
+  # Medium Account ($5K-$10K)
+  medium_tier:
+    max_positions: 2  # Can handle 2 positions
+    max_weekly_trades: 3  # Use full PDT allowance
+    preferred_symbols: ["XLF", "TLT", "IWM"]
+    max_stock_price: 250
+    spread_width: [3, 5]
+
+# PDT Monitoring & Alerts
+pdt_monitoring:
+  enabled: true
+  
+  # Track day trades
+  day_trade_tracker:
+    window_days: 5  # Rolling 5-day window
+    alert_at_trades: [2, 3]  # Alert at 2 and 3 trades
+    auto_pause_at_limit: true  # Stop trading at 3 trades
+    
+  # Position monitoring
+  position_monitor:
+    check_frequency: "every_minute"
+    prevent_same_day_close: true
+    log_all_trades: true
+    
+  # Alerts
+  alerts:
+    pdt_warning: "⚠️ PDT Warning: {trades_used}/{max_trades} day trades used"
+    pdt_limit: "🚨 PDT LIMIT REACHED: Trading paused for 5 days"
+    overnight_required: "📅 Position must be held overnight (PDT rule)"
+
+# Example PDT-Compliant Trades
+example_pdt_trades:
+  "$3,000_account":
+    tier: "small"
+    max_weekly_trades: 2
+    
+    # Trade 1 (Monday)
+    trade_1:
+      symbol: "GDX"
+      strategy: "Bull Put Spread"
+      setup: "Sell $28 put, Buy $26 put"
+      width: "$2 ($200 risk)"
+      credit: "$0.40 ($40)"
+      dte: 21
+      entry_time: "10:30 AM"
+      exit_rule: "Hold overnight minimum"
+      
+    # Trade 2 (Wednesday - only if Trade 1 closed)
+    trade_2:
+      symbol: "XLF"
+      strategy: "Bull Put Spread"
+      setup: "Sell $40 put, Buy $38 put"
+      width: "$2 ($200 risk)"
+      credit: "$0.35 ($35)"
+      dte: 28
+      entry_time: "11:00 AM"
+      exit_rule: "Hold overnight minimum"
+      
+    # Week 2: Start over with fresh 5-day window
+    week_2_reset:
+      day_trade_count: 0  # Reset counter
+      can_trade_again: true
+
+# Risk Warnings
+risk_warnings:
+  pdt_accounts:
+    - "⚠️ PDT accounts limited to 3 day trades per 5 business days"
+    - "📅 All positions must be held overnight"
+    - "🎯 Focus on swing trading (2+ week positions)"
+    - "💰 Use weekly/monthly options, avoid 0DTE"
+    - "📊 Track day trades carefully to avoid violations"
+    
+  recommendations:
+    - "Start with paper trading to understand PDT rules"
+    - "Use position alerts to prevent same-day closes"
+    - "Consider growing account to $25K+ for more flexibility"
+    - "Focus on quality over quantity trades"
+
+# Compliance Checklist
+compliance_checklist:
+  before_each_trade:
+    - "✅ Check day trade count (must be < 3 in 5 days)"
+    - "✅ Verify position will be held overnight"
+    - "✅ Confirm entry time is appropriate"
+    - "✅ Validate risk is within limits"
+    - "✅ Ensure account tier matches trade size"
+    
+  daily_monitoring:
+    - "📊 Review day trade count"
+    - "📅 Check position holding requirements"
+    - "⚠️ Monitor for potential violations"
+    - "📝 Log all trade activities"

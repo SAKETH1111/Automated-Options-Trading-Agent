@@ -8,15 +8,24 @@ trading:
     end: "16:00"
     timezone: "America/New_York"
   
-  # Risk Management (Conservative for indices)
+  # Risk Management (PDT-Compliant for small accounts)
   risk:
-    max_daily_loss_pct: 3.0  # More conservative for indices
-    max_position_size_pct: 15.0  # Slightly smaller per position
-    max_trades_per_day: 6  # Higher volume possible with liquid indices
-    max_positions_per_symbol: 3  # Can handle more SPY/QQQ positions
-    stop_loss_pct: 50
-    take_profit_pct: 50
-    max_portfolio_heat: 25.0  # Conservative total risk
+    max_daily_loss_pct: 10.0  # More conservative for small accounts
+    max_position_size_pct: 15.0  # Smaller per position
+    max_trades_per_day: 1  # 🚨 PDT COMPLIANCE: Only 1 new position per day
+    max_positions_per_symbol: 1  # 🚨 PDT COMPLIANCE: Limit positions
+    stop_loss_pct: 75  # Tighter stops for small accounts
+    take_profit_pct: 40  # Take profits faster
+    max_portfolio_heat: 20.0  # Conservative total risk
+    
+  # 🚨 PDT COMPLIANCE RULES
+  pdt_compliance:
+    enabled: true
+    min_pdt_account_balance: 25000  # Below this = PDT restrictions
+    max_day_trades_per_5_days: 3  # STRICT LIMIT
+    max_weekly_trades: 3  # Maximum 3 trades per week
+    hold_overnight_required: true  # Cannot close same day as open
+    min_dte: 14  # Minimum 2 weeks to expiration
 
   # Position Sizing
   position_sizing:
@@ -52,21 +61,29 @@ scanning:
 # ========================================
 
 strategies:
-  # Strategy 1: SPY/QQQ Bull Put Spread (Primary)
+  # Strategy 1: SPY/QQQ Bull Put Spread (PDT-Compliant)
   spy_qqq_bull_put_spread:
     enabled: true
-    dte_range: [30, 45]  # 30-45 DTE sweet spot
-    short_delta_range: [-0.25, -0.20]  # 20-25 delta short puts
-    width_range: [5, 10, 15]  # Flexible widths for SPY/QQQ
-    min_credit: 0.40  # Higher minimum for indices
-    max_risk_reward: 3.5  # Slightly better for liquid options
-    take_profit_pct: 50
-    stop_loss_pct: 100
     
-    # SPY/QQQ Specific
-    min_premium_dollars: 40  # Minimum $40 credit per spread
-    max_spread_cost_pct: 3.0  # Very tight spreads expected
-    prefer_weekly: false  # Stick to monthlies for now
+    # 🚨 PDT COMPLIANCE - Must hold overnight
+    dte_range: [21, 45]  # Minimum 3 weeks to expiration
+    min_dte: 21  # No weekly options (PDT risk)
+    hold_overnight_required: true  # Cannot close same day
+    
+    short_delta_range: [-0.25, -0.20]  # Conservative delta
+    width_range: [3, 8]  # Narrower spreads for small accounts
+    min_credit: 0.40  # Minimum credit requirement
+    max_risk_reward: 3.5
+    
+    # Conservative exits for small accounts
+    take_profit_pct: 40  # Take profits faster
+    stop_loss_pct: 75  # Tighter stops
+    
+    # SPY/QQQ Specific (PDT-Compliant)
+    min_premium_dollars: 30  # Lower minimum for small accounts
+    max_spread_cost_pct: 5.0  # More lenient for small accounts
+    prefer_weekly: false  # 🚨 No weekly options (PDT rule)
+    no_same_day_close: true  # 🚨 PDT enforcement
   
   # Strategy 2: SPY Iron Condor (Market Neutral)
   spy_iron_condor:
