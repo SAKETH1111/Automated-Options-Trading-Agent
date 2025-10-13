@@ -66,48 +66,53 @@ scanning:
     
     # Micro accounts ($1K-$2.5K) - Low price symbols with good options
     micro_tier:
-      - EWZ    # ~$28 (Brazil ETF, good options liquidity)
-      - GDX    # ~$28 (gold miners, excellent options)
-      - F      # ~$12 (Ford, liquid options)
-      - GOLD   # ~$22 (Barrick Gold, good options)
+      symbols:
+        - EWZ    # ~$28 (Brazil ETF, good options liquidity)
+        - GDX    # ~$28 (gold miners, excellent options)
+        - F      # ~$12 (Ford, liquid options)
+        - GOLD   # ~$22 (Barrick Gold, good options)
       max_stock_price: 35
       preferred_spread_width: [1, 2, 3]
       note: "Removed leveraged ETFs (SQQQ, UVXY, TZA) - non-standard options"
     
     # Small accounts ($2.5K-$5K) - Low price symbols
     small_tier:
-      - GDX    # ~$28 (gold miners)
-      - XLF    # ~$42 (financials)
-      - TLT    # ~$95 (bonds)
-      - SQQQ   # ~$9 (keep for flexibility)
+      symbols:
+        - GDX    # ~$28 (gold miners)
+        - XLF    # ~$42 (financials)
+        - TLT    # ~$95 (bonds)
+        - EWZ    # ~$30 (Brazil ETF)
       max_stock_price: 100
       preferred_spread_width: [2, 3, 5]
     
     # Medium accounts ($5K-$10K) - Medium price + SPY narrow
     medium_tier:
-      - XLF    # ~$42
-      - TLT    # ~$95
-      - IWM    # ~$220 (with narrow spreads)
-      - SPY    # ~$550 (narrow spreads only)
+      symbols:
+        - XLF    # ~$42
+        - TLT    # ~$95
+        - IWM    # ~$220 (with narrow spreads)
+        - SPY    # ~$550 (narrow spreads only)
       max_stock_price: 250
       preferred_spread_width: [3, 5]
     
     # Standard accounts ($10K-$25K) - SPY/QQQ focus
     standard_tier:
-      - SPY    # ~$550
-      - QQQ    # ~$480
-      - IWM    # ~$220
+      symbols:
+        - SPY    # ~$550
+        - QQQ    # ~$480
+        - IWM    # ~$220
       max_stock_price: 600
       preferred_spread_width: [5, 10]
     
     # Large accounts ($25K+) - Full flexibility
     large_tier:
-      - SPY
-      - QQQ
-      - IWM
-      - DIA
-      - XLF
-      - XLE
+      symbols:
+        - SPY
+        - QQQ
+        - IWM
+        - DIA
+        - XLF
+        - XLE
       preferred_spread_width: [5, 10, 15]
   
   # Universal filters

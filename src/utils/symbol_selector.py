@@ -26,7 +26,8 @@ def get_symbols_for_account(account_balance: float) -> List[str]:
     adaptive_symbols = config['scanning']['adaptive_symbols']
     tier_key = f'{account_tier}_tier'
     
-    symbols = adaptive_symbols.get(tier_key, [])
+    tier_config = adaptive_symbols.get(tier_key, {})
+    symbols = tier_config.get('symbols', [])
     
     logger.info(f"Account: ${account_balance:,.2f} | Tier: {account_tier} | Symbols: {symbols}")
     
@@ -47,19 +48,12 @@ def get_symbol_info(account_balance: float) -> dict:
     tier_key = f'{account_tier}_tier'
     
     # Get tier-specific info
-    tier_config = {}
-    for key, value in adaptive_symbols.items():
-        if key == tier_key:
-            if isinstance(value, list):
-                tier_config['symbols'] = value
-            else:
-                tier_config = value
-                break
+    tier_config = adaptive_symbols.get(tier_key, {})
     
     return {
         'account_balance': account_balance,
         'tier': account_tier,
-        'symbols': tier_config.get('symbols', adaptive_symbols.get(tier_key, [])),
+        'symbols': tier_config.get('symbols', []),
         'max_stock_price': tier_config.get('max_stock_price', 'N/A'),
         'preferred_spread_width': tier_config.get('preferred_spread_width', 'N/A'),
         'note': tier_config.get('note', '')
