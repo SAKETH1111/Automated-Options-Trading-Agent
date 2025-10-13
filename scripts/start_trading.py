@@ -15,6 +15,7 @@ from src.automation.auto_trader import AutomatedTrader
 from src.brokers.alpaca_client import AlpacaClient
 from src.database.session import get_db
 from src.utils.symbol_selector import get_symbols_for_account
+from src.market_data.realtime_collector import RealTimeDataCollector
 
 def main():
     """Start the automated trading agent"""
@@ -38,7 +39,20 @@ def main():
         # Get a database session (keep it open for the lifetime of the trader)
         session = db.SessionLocal()
         
+        # Initialize data collector
+        data_collector = RealTimeDataCollector(
+            symbols=symbols,
+            alpaca_client=alpaca,
+            collect_interval=5.0,  # Collect every 5 seconds
+            buffer_size=50
+        )
+        
         try:
+            # Start data collection FIRST
+            logger.info("🔄 Starting real-time data collection...")
+            data_collector.start()
+            logger.info("✅ Data collector started")
+            
             # Initialize automated trader
             trader = AutomatedTrader(
                 db_session=session,
@@ -53,6 +67,7 @@ def main():
             logger.info("🎯 Trading agent is now ACTIVE")
             logger.info("📱 Monitor via Telegram bot: /status")
             logger.info("🔄 Scanning every 5 minutes for opportunities")
+            logger.info("📊 Collecting data every 5 seconds")
             
             # Keep running
             while True:
@@ -61,6 +76,7 @@ def main():
         except KeyboardInterrupt:
             logger.info("\n⏸️  Stopping trading agent...")
             trader.stop_automated_trading()
+            data_collector.stop()
             logger.info("✅ Trading agent stopped")
         finally:
             session.close()
