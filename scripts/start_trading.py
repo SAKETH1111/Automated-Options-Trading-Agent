@@ -48,10 +48,11 @@ def main():
             
             logger.info("✅ Automated Trader initialized")
             
-            # Start trading
-            trader.start()
+            # Start trading (runs every 5 minutes)
+            trader.start_automated_trading(interval_minutes=5)
             logger.info("🎯 Trading agent is now ACTIVE")
             logger.info("📱 Monitor via Telegram bot: /status")
+            logger.info("🔄 Scanning every 5 minutes for opportunities")
             
             # Keep running
             while True:
@@ -59,7 +60,7 @@ def main():
                     
         except KeyboardInterrupt:
             logger.info("\n⏸️  Stopping trading agent...")
-            trader.stop()
+            trader.stop_automated_trading()
             logger.info("✅ Trading agent stopped")
         finally:
             session.close()
