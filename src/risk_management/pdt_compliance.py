@@ -116,9 +116,9 @@ class PDTComplianceManager:
             with self.db.get_session() as session:
                 # Get all trades in last 5 business days
                 recent_trades = session.query(Trade).filter(
-                    Trade.timestamp_entry >= cutoff_date,
+                    Trade.timestamp_open >= cutoff_date,
                     Trade.status == 'closed'
-                ).order_by(Trade.timestamp_entry.asc()).all()
+                ).order_by(Trade.timestamp_open.asc()).all()
                 
                 day_trades = 0
                 processed_trades = set()
@@ -133,7 +133,7 @@ class PDTComplianceManager:
                         processed_trades.add(trade.id)
                         
                         logger.debug(f"Day trade detected: {trade.symbol} {trade.strategy} "
-                                   f"on {trade.timestamp_entry.date()}")
+                                   f"on {trade.timestamp_open.date()}")
                 
                 logger.info(f"Day trades in last 5 business days: {day_trades}")
                 return day_trades
@@ -144,11 +144,11 @@ class PDTComplianceManager:
     
     def _is_day_trade(self, trade: Trade) -> bool:
         """Check if a trade is a day trade"""
-        if not trade.timestamp_entry or not trade.timestamp_exit:
+        if not trade.timestamp_open or not trade.timestamp_exit:
             return False
         
         # Same day entry and exit = day trade
-        entry_date = trade.timestamp_entry.date()
+        entry_date = trade.timestamp_open.date()
         exit_date = trade.timestamp_exit.date()
         
         return entry_date == exit_date
