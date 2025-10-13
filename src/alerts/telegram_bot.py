@@ -82,6 +82,12 @@ class TradingAgentBot:
         try:
             # Get account info
             account = self.alpaca.get_account()
+            account_balance = float(account.get('equity', 0))
+            
+            # Get PDT compliance status
+            from src.risk_management.pdt_compliance import PDTComplianceManager
+            pdt_manager = PDTComplianceManager(account_balance)
+            pdt_info = pdt_manager.get_pdt_status()
             
             # Get trading status
             status = self.auto_trader.get_status()
@@ -91,18 +97,32 @@ class TradingAgentBot:
             pos_manager = AutomatedPositionManager(self.db, self.alpaca)
             portfolio = pos_manager.get_portfolio_summary()
             
+            # PDT status emoji
+            if pdt_info.is_pdt_account:
+                if pdt_info.status.value == "compliant":
+                    pdt_emoji = "🟢"
+                elif pdt_info.status.value == "warning":
+                    pdt_emoji = "🟡"
+                else:
+                    pdt_emoji = "🔴"
+            else:
+                pdt_emoji = "🔵"
+            
             message = (
-                "📊 *Trading Agent Status*\n\n"
+                "📊 Trading Agent Status\n\n"
                 f"🤖 Trading: {'✅ ACTIVE' if status['is_running'] else '⏸️ PAUSED'}\n"
-                f"💰 Equity: ${float(account.get('equity', 0)):,.2f}\n"
+                f"💰 Account: ${account_balance:,.2f}\n"
                 f"💵 Cash: ${float(account.get('cash', 0)):,.2f}\n"
                 f"📈 Open Positions: {portfolio.get('total_positions', 0)}\n"
-                f"💼 Current P&L: ${portfolio.get('current_pnl', 0):+,.2f}\n"
-                f"📊 Symbols: {', '.join(status['symbols'])}\n\n"
+                f"💼 Current P&L: ${portfolio.get('current_pnl', 0):+,.2f}\n\n"
+                f"{pdt_emoji} PDT Status: {pdt_info.status.value.upper()}\n"
+                f"⚡ Day Trades: {pdt_info.day_trades_used}/{pdt_info.max_day_trades}\n"
+                f"📅 Positions Today: {portfolio.get('total_positions', 0)}/1\n\n"
+                f"📊 Symbols: {', '.join(status['symbols'])}\n"
                 f"⏰ {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
             )
             
-            await update.message.reply_text(message, parse_mode='Markdown')
+            await update.message.reply_text(message)
             
         except Exception as e:
             await update.message.reply_text(f"❌ Error: {str(e)}")
@@ -362,6 +382,74 @@ class TradingAgentBot:
                 f"❌ Error checking ML status:\n{str(e)}"
             )
     
+    async def pdt_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /pdt command - Show detailed PDT compliance status"""
+        if not self._is_authorized(update):
+            await update.message.reply_text("🔒 Unauthorized. This bot is private.")
+            return
+        
+        try:
+            # Get account info
+            account = self.alpaca.get_account()
+            account_balance = float(account.get('equity', 0))
+            
+            # Get PDT compliance status
+            from src.risk_management.pdt_compliance import PDTComplianceManager
+            pdt_manager = PDTComplianceManager(account_balance)
+            pdt_info = pdt_manager.get_pdt_status()
+            
+            # Get PDT warnings
+            pdt_warnings = pdt_manager.get_pdt_warnings()
+            
+            # Build PDT status message
+            if pdt_info.is_pdt_account:
+                status_emoji = {
+                    "compliant": "🟢",
+                    "warning": "🟡", 
+                    "limit_reached": "🔴"
+                }.get(pdt_info.status.value, "⚪")
+                
+                message = (
+                    "🚨 PDT Compliance Status\n\n"
+                    f"{status_emoji} Account: ${account_balance:,.2f} (PDT Account)\n"
+                    f"📊 Status: {pdt_info.status.value.upper()}\n"
+                    f"⚡ Day Trades Used: {pdt_info.day_trades_used}/{pdt_info.max_day_trades}\n"
+                    f"📅 Days Until Reset: {pdt_info.days_remaining}\n"
+                    f"✅ Can Trade: {pdt_info.can_trade}\n\n"
+                    f"📋 PDT Rules:\n"
+                    f"   • Max 3 day trades per 5 business days\n"
+                    f"   • Day trade = open & close same day\n"
+                    f"   • Must hold positions overnight\n"
+                    f"   • Max 1 position per day\n"
+                    f"   • Min 21 DTE (monthly options only)\n\n"
+                )
+                
+                if pdt_warnings:
+                    message += "⚠️ Warnings:\n"
+                    for warning in pdt_warnings:
+                        message += f"   • {warning}\n"
+                
+                if pdt_info.suspension_reason:
+                    message += f"\n🚨 Suspension: {pdt_info.suspension_reason}"
+                    
+            else:
+                message = (
+                    "🔵 PDT Exempt Account\n\n"
+                    f"💰 Account: ${account_balance:,.2f}\n"
+                    f"✅ Status: EXEMPT (No PDT restrictions)\n"
+                    f"🎯 Trading: Full flexibility\n"
+                    f"📅 Day Trades: Unlimited\n"
+                    f"⏰ DTE: Any (including weekly options)\n"
+                    f"🌙 Hold Time: No restrictions\n\n"
+                    f"🎊 You can trade freely without PDT limitations!"
+                )
+            
+            await update.message.reply_text(message)
+            
+        except Exception as e:
+            await update.message.reply_text(f"❌ Error: {str(e)}")
+            logger.error(f"Error in PDT command: {e}")
+    
     async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /help command"""
         if not self._is_authorized(update):
@@ -369,17 +457,17 @@ class TradingAgentBot:
             return
         
         await update.message.reply_text(
-            "🤖 *Trading Agent Commands*\n\n"
-            "/status - Get current status\n"
+            "🤖 Trading Agent Commands\n\n"
+            "/status - Get current status with PDT info\n"
             "/positions - View open positions\n"
             "/pnl - Check P&L (today, week, all-time)\n"
             "/risk - View risk metrics\n"
             "/ml - Check ML model status\n"
+            "/pdt - Detailed PDT compliance status\n"
             "/stop - Stop automated trading\n"
             "/resume - Resume trading\n"
             "/help - Show this message\n\n"
-            "Dashboard: http://45.55.150.19:8000",
-            parse_mode='Markdown'
+            "Dashboard: http://45.55.150.19:8000"
         )
     
     def send_notification(self, message: str):
@@ -415,6 +503,7 @@ class TradingAgentBot:
             application.add_handler(CommandHandler("pnl", self.pnl_command))
             application.add_handler(CommandHandler("risk", self.risk_command))
             application.add_handler(CommandHandler("ml", self.ml_command))
+            application.add_handler(CommandHandler("pdt", self.pdt_command))
             application.add_handler(CommandHandler("stop", self.stop_command))
             application.add_handler(CommandHandler("resume", self.resume_command))
             application.add_handler(CommandHandler("help", self.help_command))
