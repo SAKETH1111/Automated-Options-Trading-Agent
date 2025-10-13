@@ -133,8 +133,8 @@ class RealTimeDataCollector:
                         logger.debug(f"Error collecting tick for {symbol}: {e}")
                         self.stats['collection_errors'] += 1
                 
-                # Update stats
-                self.stats['last_collection_time'] = datetime.now(self.market_timezone)
+                # Update stats (naive datetime for consistency)
+                self.stats['last_collection_time'] = datetime.now(self.market_timezone).replace(tzinfo=None)
                 
                 # Flush buffer if full
                 if len(self._tick_buffer) >= self.buffer_size:
@@ -209,9 +209,11 @@ class RealTimeDataCollector:
             market_state = self._get_market_state()
             
             # Create tick data object
+            # Use naive datetime (without tzinfo) so SQLite stores Central Time directly
+            current_time_ct = datetime.now(self.market_timezone).replace(tzinfo=None)
             tick_data = IndexTickData(
                 symbol=symbol,
-                timestamp=datetime.now(self.market_timezone),
+                timestamp=current_time_ct,
                 price=price,
                 bid=bid,
                 ask=ask,
@@ -232,10 +234,10 @@ class RealTimeDataCollector:
             # Add to buffer
             self._tick_buffer.append(tick_data)
             
-            # Update previous tick
+            # Update previous tick (naive datetime)
             self._previous_ticks[symbol] = {
                 'price': price,
-                'timestamp': datetime.now(self.market_timezone)
+                'timestamp': datetime.now(self.market_timezone).replace(tzinfo=None)
             }
             
             # Update stats
