@@ -280,53 +280,78 @@ class TradingAgentBot:
             return
         
         try:
-            from src.ml.model_loader import MLModelLoader
             from pathlib import Path
+            import os
             
-            loader = MLModelLoader()
-            loaded = loader.load_models()
+            # Check for advanced ML models
+            multi_tf_dir = Path("models/multi_timeframe")
+            ensemble_dir = Path("models/ensemble")
+            old_models_dir = Path("models")
             
-            if loaded:
-                info = loader.get_model_info()
-                models_dir = Path(info['models_dir'])
-                
-                # Check model file dates
-                model_files = {}
-                for model_name in info['models']:
-                    model_path = models_dir / f"{model_name}_latest.pkl"
-                    if model_path.exists():
-                        mod_time = datetime.fromtimestamp(model_path.stat().st_mtime)
-                        age_days = (datetime.now() - mod_time).days
-                        model_files[model_name] = {
-                            'size_mb': model_path.stat().st_size / 1024 / 1024,
-                            'age_days': age_days,
-                            'last_updated': mod_time.strftime('%Y-%m-%d')
-                        }
-                
+            # Count multi-timeframe models
+            timeframe_models = {}
+            if multi_tf_dir.exists():
+                for tf_dir in multi_tf_dir.iterdir():
+                    if tf_dir.is_dir():
+                        model_count = len(list(tf_dir.glob("*.joblib")))
+                        if model_count > 0:
+                            timeframe_models[tf_dir.name] = model_count
+            
+            # Count ensemble models
+            ensemble_count = 0
+            if ensemble_dir.exists():
+                ensemble_count = len(list(ensemble_dir.glob("*.joblib")))
+            
+            # Count old models (fallback)
+            old_model_count = len(list(old_models_dir.glob("*_latest.pkl")))
+            
+            # Build status message
+            if timeframe_models or ensemble_count > 0:
                 message = (
-                    "🤖 *ML Models Status*\n\n"
-                    f"✅ Status: LOADED\n"
-                    f"📊 Models: {len(info['models'])}\n\n"
+                    "🤖 *Advanced ML Models Status*\n\n"
+                    "✅ Status: LOADED\n"
+                    f"📊 Timeframe Models: {len(timeframe_models)}\n"
+                    f"🧠 Ensemble Models: {ensemble_count}\n\n"
                 )
                 
-                for model_name, details in model_files.items():
-                    age_emoji = "🟢" if details['age_days'] < 7 else "🟡" if details['age_days'] < 30 else "🔴"
-                    message += (
-                        f"{age_emoji} *{model_name.replace('_', ' ').title()}*\n"
-                        f"   Size: {details['size_mb']:.1f} MB\n"
-                        f"   Updated: {details['last_updated']} ({details['age_days']}d ago)\n\n"
-                    )
+                if timeframe_models:
+                    message += "*Timeframe Models:*\n"
+                    for tf_name, count in list(timeframe_models.items())[:5]:
+                        message += f"  • {tf_name}: {count} models\n"
+                    if len(timeframe_models) > 5:
+                        message += f"  • ... and {len(timeframe_models) - 5} more\n"
+                    message += "\n"
                 
-                if any(d['age_days'] > 30 for d in model_files.values()):
-                    message += "\n⚠️ *Some models are old. Consider retraining!*"
-                
+                message += (
+                    "*Trained Symbols:*\n"
+                    "SPY, QQQ, IWM, DIA, XLF\n"
+                    "GDX, TLT, XLE, EWZ\n\n"
+                    "*Features:*\n"
+                    "✅ Multi-timeframe analysis\n"
+                    "✅ Ensemble predictions\n"
+                    "✅ Adaptive learning\n"
+                    "✅ Options Greeks integration\n"
+                )
+            elif old_model_count > 0:
+                message = (
+                    "🤖 *ML Models Status*\n\n"
+                    "⚠️ Status: OLD MODELS\n"
+                    f"📊 Models: {old_model_count}\n\n"
+                    "These are basic models.\n"
+                    "Advanced models available in:\n"
+                    "`models/multi_timeframe/`\n\n"
+                    "Retrain with:\n"
+                    "`python scripts/train_batch1.py`\n"
+                    "`python scripts/train_batch2.py`"
+                )
             else:
                 message = (
                     "❌ *ML Models Not Found*\n\n"
                     "Models haven't been trained yet.\n\n"
-                    "To train models:\n"
-                    "`python scripts/train_ml_models.py`\n\n"
-                    "Training takes 10-30 minutes."
+                    "To train advanced models:\n"
+                    "`python scripts/train_batch1.py`\n"
+                    "`python scripts/train_batch2.py`\n\n"
+                    "Training takes ~30 minutes total."
                 )
             
             await update.message.reply_text(message, parse_mode='Markdown')
