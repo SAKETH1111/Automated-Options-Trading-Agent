@@ -224,18 +224,21 @@ class AutomatedSignalGenerator:
         Returns:
             True if should trade
         """
-        current_hour = datetime.now().hour
+        # Get current time in ET (Eastern Time)
+        import pytz
+        et_tz = pytz.timezone('America/New_York')
+        current_et = datetime.now(pytz.UTC).astimezone(et_tz)
+        current_hour = current_et.hour
+        current_minute = current_et.minute
         
         # Only trade during market hours (9:30 AM - 4:00 PM ET)
-        # Simplified: 9-16 (assuming ET)
         if current_hour < 9 or current_hour >= 16:
-            logger.debug("Outside market hours")
+            logger.debug(f"Outside market hours (Current ET: {current_et.strftime('%H:%M')})")
             return False
         
         # Avoid first 15 minutes (high volatility)
-        current_minute = datetime.now().minute
         if current_hour == 9 and current_minute < 45:
-            logger.debug("Too close to market open")
+            logger.debug(f"Too close to market open (Current ET: {current_et.strftime('%H:%M')})")
             return False
         
         # Avoid last 15 minutes (closing volatility)
