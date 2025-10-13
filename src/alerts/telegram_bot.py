@@ -315,7 +315,7 @@ class TradingAgentBot:
                 )
                 
                 if timeframe_models:
-                    message += "*Timeframe Models:*\n"
+                    message += "📈 Timeframe Models:\n"
                     for tf_name, count in list(timeframe_models.items())[:5]:
                         message += f"  • {tf_name}: {count} models\n"
                     if len(timeframe_models) > 5:
@@ -323,10 +323,10 @@ class TradingAgentBot:
                     message += "\n"
                 
                 message += (
-                    "*Trained Symbols:*\n"
+                    "🎯 Trained Symbols:\n"
                     "SPY, QQQ, IWM, DIA, XLF\n"
                     "GDX, TLT, XLE, EWZ\n\n"
-                    "*Features:*\n"
+                    "⚡ Features:\n"
                     "✅ Multi-timeframe analysis\n"
                     "✅ Ensemble predictions\n"
                     "✅ Adaptive learning\n"
@@ -334,33 +334,32 @@ class TradingAgentBot:
                 )
             elif old_model_count > 0:
                 message = (
-                    "🤖 *ML Models Status*\n\n"
+                    "🤖 ML Models Status\n\n"
                     "⚠️ Status: OLD MODELS\n"
                     f"📊 Models: {old_model_count}\n\n"
                     "These are basic models.\n"
                     "Advanced models available in:\n"
-                    "`models/multi_timeframe/`\n\n"
+                    "models/multi_timeframe/\n\n"
                     "Retrain with:\n"
-                    "`python scripts/train_batch1.py`\n"
-                    "`python scripts/train_batch2.py`"
+                    "python scripts/train_batch1.py\n"
+                    "python scripts/train_batch2.py"
                 )
             else:
                 message = (
-                    "❌ *ML Models Not Found*\n\n"
+                    "❌ ML Models Not Found\n\n"
                     "Models haven't been trained yet.\n\n"
                     "To train advanced models:\n"
-                    "`python scripts/train_batch1.py`\n"
-                    "`python scripts/train_batch2.py`\n\n"
+                    "python scripts/train_batch1.py\n"
+                    "python scripts/train_batch2.py\n\n"
                     "Training takes ~30 minutes total."
                 )
             
-            await update.message.reply_text(message, parse_mode='Markdown')
+            await update.message.reply_text(message)
             
         except Exception as e:
             logger.error(f"Error in /ml command: {e}")
             await update.message.reply_text(
-                f"❌ Error checking ML status:\n`{str(e)}`",
-                parse_mode='Markdown'
+                f"❌ Error checking ML status:\n{str(e)}"
             )
     
     async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
