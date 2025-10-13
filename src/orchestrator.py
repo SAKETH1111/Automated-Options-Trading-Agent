@@ -11,17 +11,15 @@ from loguru import logger
 from src.brokers.alpaca_client import AlpacaClient
 from src.config.settings import get_config
 from src.database.session import get_db
-from src.execution.executor import TradeExecutor
-from src.execution.monitor import PositionMonitor
-from src.learning.analyzer import TradeAnalyzer
-from src.learning.learner import StrategyLearner
+from src.automation.order_executor import AutomatedOrderExecutor
+from src.automation.position_manager import AutomatedPositionManager
+from src.automation.trade_manager import AutomatedTradeManager
+from src.automation.signal_generator import AutomatedSignalGenerator
+from src.automation.auto_trader import AutomatedTrader
 from src.market_data.collector import MarketDataCollector
-from src.market_data.realtime_collector import RealTimeDataCollector
-from src.monitoring.alerts import AlertManager
-from src.monitoring.logger import setup_logging
-from src.risk.manager import RiskManager
+from src.alerts.alert_manager import AlertManager
+from src.risk_management.risk_manager import RiskManager
 from src.risk_management.pdt_compliance import PDTComplianceManager
-from src.signals.generator import SignalGenerator
 from src.utils.symbol_selector import get_symbols_for_account, get_symbol_info
 
 
