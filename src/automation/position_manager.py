@@ -150,6 +150,72 @@ class AutomatedPositionManager:
             logger.error(f"Error getting portfolio summary: {e}")
             return {}
     
+    def monitor_positions(self) -> List[Dict]:
+        """
+        Monitor all open positions and generate exit signals
+        
+        Returns:
+            List of exit signals for positions that should be closed
+        """
+        try:
+            positions = self.get_open_positions()
+            positions = self.update_position_values(positions)
+            
+            exit_signals = []
+            
+            for position in positions:
+                # Check if position should be closed
+                current_pnl = position.get('current_pnl', 0)
+                max_profit = position['max_profit']
+                max_loss = abs(position['max_loss'])
+                
+                # Calculate P&L percentage
+                pnl_pct = (current_pnl / max_loss * 100) if max_loss > 0 else 0
+                
+                # Exit conditions
+                should_close = False
+                reason = ""
+                
+                # Take profit at 50% of max profit
+                if current_pnl >= max_profit * 0.50:
+                    should_close = True
+                    reason = "take_profit_50pct"
+                
+                # Stop loss at 100% of max loss (2x credit received)
+                elif current_pnl <= -max_loss:
+                    should_close = True
+                    reason = "stop_loss"
+                
+                # Check expiration (close 7 days before)
+                days_to_exp = 999
+                if position.get('expiration'):
+                    exp_date = position['expiration']
+                    if isinstance(exp_date, str):
+                        from dateutil.parser import parse
+                        exp_date = parse(exp_date)
+                    days_to_exp = (exp_date - datetime.now()).days
+                
+                if days_to_exp <= 7:
+                    should_close = True
+                    reason = "near_expiration"
+                
+                if should_close:
+                    exit_signals.append({
+                        "action": "close",
+                        "trade_id": position['position_id'],
+                        "symbol": position['symbol'],
+                        "reason": reason,
+                        "pnl": current_pnl,
+                        "pnl_pct": pnl_pct
+                    })
+                    logger.info(f"Exit signal: {position['symbol']} - {reason} (P&L: ${current_pnl:+.2f})")
+            
+            return exit_signals
+        
+        except Exception as e:
+            logger.error(f"Error monitoring positions: {e}")
+            return []
+    
     def check_position_health(
         self,
         position: Dict

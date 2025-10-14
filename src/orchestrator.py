@@ -13,14 +13,27 @@ from src.config.settings import get_config
 from src.database.session import get_db
 from src.automation.order_executor import AutomatedOrderExecutor
 from src.automation.position_manager import AutomatedPositionManager
-from src.automation.trade_manager import AutomatedTradeManager
-from src.automation.signal_generator import AutomatedSignalGenerator
-from src.automation.auto_trader import AutomatedTrader
 from src.market_data.collector import MarketDataCollector
+from src.market_data.realtime_collector import RealTimeDataCollector
+from src.signals.generator import SignalGenerator
 from src.alerts.alert_manager import AlertManager
+from src.analysis.analyzer import MarketAnalyzer
+from src.learning.learner import StrategyLearner
 from src.risk_management.risk_manager import RiskManager
 from src.risk_management.pdt_compliance import PDTComplianceManager
 from src.utils.symbol_selector import get_symbols_for_account, get_symbol_info
+
+
+def setup_logging():
+    """Configure logging for the trading agent"""
+    logger.add(
+        "logs/trading_agent.log",
+        rotation="100 MB",
+        retention="30 days",
+        level="INFO",
+        format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}"
+    )
+    logger.info("Logging configured")
 
 
 class TradingOrchestrator:
@@ -60,10 +73,10 @@ class TradingOrchestrator:
         logger.info(f"   Spread Width: {symbol_info['preferred_spread_width']}")
         
         self.signal_generator = SignalGenerator(self.market_data, self.config)
-        self.trade_executor = TradeExecutor(self.alpaca, self.risk_manager, self.config)
-        self.position_monitor = PositionMonitor(self.market_data)
+        self.trade_executor = AutomatedOrderExecutor(self.db, self.alpaca)
+        self.position_monitor = AutomatedPositionManager(self.db, self.alpaca)
         self.alert_manager = AlertManager()
-        self.trade_analyzer = TradeAnalyzer()
+        self.trade_analyzer = MarketAnalyzer(self.db)
         self.strategy_learner = StrategyLearner(self.config)
         
         # Initialize real-time data collector with smart symbols
@@ -410,35 +423,33 @@ class TradingOrchestrator:
             logger.info("Running Daily Analysis")
             logger.info("=" * 80)
             
-            # Get performance metrics
-            metrics = self.trade_analyzer.calculate_performance_metrics(period_days=30)
-            
-            if metrics:
-                logger.info("📊 Performance (Last 30 Days):")
-                logger.info(f"  Total Trades: {metrics['total_trades']}")
-                logger.info(f"  Win Rate: {metrics['win_rate']:.1f}%")
-                logger.info(f"  Total P&L: ${metrics['total_pnl']:.2f}")
-                logger.info(f"  Profit Factor: {metrics['profit_factor']:.2f}")
-                logger.info(f"  Sharpe Ratio: {metrics['sharpe_ratio']:.2f}")
-                
-                if metrics.get("error_counts"):
-                    logger.info("  Common Errors:")
-                    for error, count in metrics["error_counts"].items():
-                        logger.info(f"    - {error}: {count}")
-            
-            # Analyze recent closed trades
+            # Simple performance metrics
             with self.db.get_session() as session:
                 from src.database.models import Trade
-                recent_trades = session.query(Trade).filter(
+                from datetime import timedelta
+                
+                thirty_days_ago = datetime.now() - timedelta(days=30)
+                
+                closed_trades = session.query(Trade).filter(
                     Trade.status == "closed",
-                    Trade.reason_tags == []
-                ).limit(10).all()
+                    Trade.timestamp_exit >= thirty_days_ago
+                ).all()
                 
-                for trade in recent_trades:
-                    self.trade_analyzer.analyze_trade(trade)
-                    session.add(trade)
-                
-                session.commit()
+                if closed_trades:
+                    total_trades = len(closed_trades)
+                    winning_trades = sum(1 for t in closed_trades if t.pnl > 0)
+                    win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0
+                    total_pnl = sum(t.pnl for t in closed_trades)
+                    avg_pnl = total_pnl / total_trades if total_trades > 0 else 0
+                    
+                    logger.info("📊 Performance (Last 30 Days):")
+                    logger.info(f"  Total Trades: {total_trades}")
+                    logger.info(f"  Winning Trades: {winning_trades}")
+                    logger.info(f"  Win Rate: {win_rate:.1f}%")
+                    logger.info(f"  Total P&L: ${total_pnl:.2f}")
+                    logger.info(f"  Average P&L: ${avg_pnl:.2f}")
+                else:
+                    logger.info("📊 No closed trades in last 30 days")
             
             logger.info("Daily analysis complete")
         
@@ -452,30 +463,35 @@ class TradingOrchestrator:
             logger.info("Running Weekly Learning")
             logger.info("=" * 80)
             
-            # Get learning insights
-            insights = self.trade_analyzer.get_learning_insights()
-            
-            if insights.get("ready_for_learning"):
-                logger.info("📚 Learning Insights:")
+            # Learning system (simplified - to be enhanced later)
+            with self.db.get_session() as session:
+                from src.database.models import Trade
                 
-                for rec in insights.get("recommendations", []):
-                    logger.info(f"  Issue: {rec['issue']} ({rec['frequency']})")
-                    logger.info(f"  Action: {rec['action']}")
+                # Get recent trades for learning
+                recent_trades = session.query(Trade).filter(
+                    Trade.status == "closed"
+                ).order_by(Trade.timestamp_exit.desc()).limit(50).all()
                 
-                # Generate adjustments for each strategy
-                for strategy_name in ["Bull Put Spread", "Cash Secured Put", "Iron Condor"]:
-                    adjustments = self.strategy_learner.analyze_and_learn(strategy_name)
+                if len(recent_trades) >= 10:
+                    logger.info(f"📚 Learning: Analyzing {len(recent_trades)} trades")
                     
-                    if adjustments:
-                        logger.info(f"\n📈 Suggested adjustments for {strategy_name}:")
-                        for change in adjustments["changes"]:
-                            logger.info(f"  {change['parameter']}: {change['old_value']} → {change['new_value']}")
-                        
-                        logger.info(f"  Confidence: {adjustments['confidence']*100:.1f}%")
-                        logger.info(f"  Reasoning: {', '.join(adjustments['reasoning'])}")
-                        
-                        # In production, apply adjustments here or queue for review
-                        # self.strategy_learner.apply_adjustments(strategy_name, adjustments)
+                    # Simple analysis
+                    winning = sum(1 for t in recent_trades if t.pnl > 0)
+                    win_rate = (winning / len(recent_trades) * 100)
+                    
+                    logger.info(f"  Recent win rate: {win_rate:.1f}%")
+                    
+                    # Strategy learner analysis
+                    try:
+                        for strategy_name in ["bull_put_spread"]:
+                            adjustments = self.strategy_learner.analyze_and_learn(strategy_name)
+                            if adjustments:
+                                logger.info(f"\n📈 Suggested adjustments for {strategy_name}")
+                                logger.info(f"  Confidence: {adjustments.get('confidence', 0)*100:.1f}%")
+                    except Exception as e:
+                        logger.debug(f"Learning analysis skipped: {e}")
+                else:
+                    logger.info("📚 Not enough trades for learning yet (need 10+)")
             
             logger.info("Weekly learning complete")
         

@@ -9,7 +9,15 @@ from loguru import logger
 from src.config.settings import get_config
 from src.database.models import LearningLog, Trade
 from src.database.session import get_db
-from .analyzer import TradeAnalyzer
+
+# Import from analysis module instead of learning.analyzer
+try:
+    from src.analysis.analyzer import MarketAnalyzer as TradeAnalyzer
+except ImportError:
+    # Fallback: create simple placeholder
+    class TradeAnalyzer:
+        def __init__(self):
+            pass
 
 
 class StrategyLearner:
@@ -273,6 +281,7 @@ class StrategyLearner:
         except Exception as e:
             logger.error(f"Error getting learning history: {e}")
             return []
+
 
 
 

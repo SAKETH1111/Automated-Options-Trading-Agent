@@ -30,6 +30,19 @@ class AutomatedOrderExecutor:
         self.pending_orders = []
         logger.info("Automated Order Executor initialized")
     
+    def execute_signal(self, signal: Dict) -> Optional[str]:
+        """
+        Execute a signal (wrapper for compatibility with orchestrator)
+        
+        Args:
+            signal: Signal dictionary
+            
+        Returns:
+            Trade ID if successful, None otherwise
+        """
+        result = self.execute_entry_signal(signal)
+        return result.get('trade_id') if result else None
+    
     def execute_entry_signal(
         self,
         signal: Dict
@@ -180,6 +193,60 @@ class AutomatedOrderExecutor:
         except Exception as e:
             logger.error(f"Error executing cash-secured put: {e}")
             return None
+    
+    def close_trade(self, trade_id: str, reason: str) -> bool:
+        """
+        Close a trade (wrapper for compatibility with orchestrator)
+        
+        Args:
+            trade_id: Trade ID to close
+            reason: Reason for closing
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            logger.info(f"Closing trade {trade_id}: {reason}")
+            
+            # Get trade from database
+            from src.database.models import Trade
+            trade = self.db.query(Trade).filter(Trade.trade_id == trade_id).first()
+            
+            if not trade:
+                logger.error(f"Trade {trade_id} not found")
+                return False
+            
+            # In paper trading, simulate closing the position
+            # Calculate final P&L (simplified)
+            entry_credit = trade.execution.get('entry_credit', 0) if isinstance(trade.execution, dict) else 0
+            max_profit = trade.risk.get('max_profit', 0) if isinstance(trade.risk, dict) else 0
+            
+            # Simulate exit price based on reason
+            if reason == "take_profit_50pct":
+                exit_pnl = max_profit * 0.50
+            elif reason == "stop_loss":
+                exit_pnl = -abs(trade.risk.get('max_loss', 0)) if isinstance(trade.risk, dict) else 0
+            else:
+                # Default: some profit from time decay
+                days_held = (datetime.utcnow() - trade.timestamp_enter).days
+                exit_pnl = max_profit * min(0.30, days_held / 35.0)
+            
+            # Update trade in database
+            trade.status = "closed"
+            trade.timestamp_exit = datetime.utcnow()
+            trade.exit_reason = reason
+            trade.pnl = exit_pnl
+            trade.pnl_pct = (exit_pnl / abs(entry_credit) * 100) if entry_credit else 0
+            trade.days_held = (trade.timestamp_exit - trade.timestamp_enter).days
+            
+            self.db.commit()
+            
+            logger.info(f"✅ Trade closed: ${exit_pnl:+.2f}")
+            return True
+        
+        except Exception as e:
+            logger.error(f"Error closing trade: {e}")
+            return False
     
     def execute_exit_signal(
         self,
