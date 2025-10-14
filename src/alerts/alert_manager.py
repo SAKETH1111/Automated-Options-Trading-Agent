@@ -52,4 +52,40 @@ class AlertManager:
         """Notify for system errors"""
         self.sms.send_system_error_sms(error)
         logger.error(f"System error alert sent: {error}")
+    
+    # Compatibility wrappers for orchestrator
+    def send_alert(self, alert_type: str, message: str, severity: str = "info"):
+        """Generic alert sender (compatibility wrapper)"""
+        logger.info(f"Alert [{severity}] {alert_type}: {message}")
+        
+        if severity in ["error", "critical"]:
+            self.notify_system_error(message)
+    
+    def alert_system_error(self, error_type: str, message: str):
+        """System error alert (compatibility wrapper)"""
+        logger.error(f"System error [{error_type}]: {message}")
+        self.notify_system_error(f"{error_type}: {message}")
+    
+    def alert_trade_executed(self, trade_id: str, symbol: str, strategy: str, contracts: int):
+        """Trade executed alert (compatibility wrapper)"""
+        trade_data = {
+            'trade_id': trade_id,
+            'symbol': symbol,
+            'strategy': strategy,
+            'contracts': contracts,
+            'timestamp': datetime.now()
+        }
+        self.notify_trade_executed(trade_data)
+    
+    def alert_position_closed(self, trade_id: str, symbol: str, pnl: float, reason: str):
+        """Position closed alert (compatibility wrapper)"""
+        position_data = {
+            'trade_id': trade_id,
+            'symbol': symbol,
+            'current_pnl': pnl,
+            'exit_reason': reason,
+            'timestamp': datetime.now()
+        }
+        event_type = 'STOP_LOSS' if pnl < 0 else 'TAKE_PROFIT'
+        self.notify_position_event(position_data, event_type)
 
