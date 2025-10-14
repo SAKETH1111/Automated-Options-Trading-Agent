@@ -90,13 +90,6 @@ class TradingOrchestrator:
             buffer_size=realtime_config.get("buffer_size", 100)
         )
         
-        # Load strategies into position monitor
-        for strategy_name, strategy_config in self.config.get("strategies", {}).items():
-            self.position_monitor.load_strategy(
-                strategy_name.replace("_", " ").title(),
-                strategy_config
-            )
-        
         # Market hours configuration - Central Time (Texas)
         trading_config = self.config.get("trading", {})
         market_hours = trading_config.get("market_hours", {})
