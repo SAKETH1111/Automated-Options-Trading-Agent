@@ -185,7 +185,8 @@ You'll also receive automatic daily reports at 4:00 PM CT!
                 trading_status = "⏸️ PAUSED (Not Running)"
             
             # PDT status emoji
-            if pdt_info.is_pdt_account:
+            # is_pdt_account = True means SUBJECT TO PDT rules (< $25K)
+            if not pdt_info.is_pdt_account:
                 pdt_emoji = "🔵"
                 pdt_status = "PDT EXEMPT"
             else:
@@ -411,9 +412,11 @@ Note: Full trading orchestrator with stop/resume is not yet implemented.
             pdt_info = pdt_manager.get_pdt_status()
             
             # Status emoji
-            if pdt_info.is_pdt_account:
+            # is_pdt_account = True means SUBJECT TO PDT rules (< $25K)
+            # is_pdt_account = False means EXEMPT from PDT rules (>= $25K)
+            if not pdt_info.is_pdt_account:
                 status_emoji = "🔵"
-                account_type = "PDT Exempt (>$25K)"
+                account_type = "PDT Exempt (≥$25K)"
             else:
                 if pdt_info.status.value == "compliant":
                     status_emoji = "🟢"
@@ -436,7 +439,8 @@ Note: Full trading orchestrator with stop/resume is not yet implemented.
 🔄 *Trading Limits:*
 """
             
-            if not pdt_info.is_pdt_account:
+            # is_pdt_account = True means SUBJECT TO restrictions
+            if pdt_info.is_pdt_account:
                 message += f"   ⚠️ Max 1 new position per day\n"
                 message += f"   ⚠️ Must hold overnight\n"
                 message += f"   ⚠️ Max {pdt_info.max_day_trades} day trades per 5 days\n\n"
