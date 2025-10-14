@@ -281,9 +281,10 @@ class TradingOrchestrator:
                     logger.warning("Daily trade limit reached")
                     return
             
-            # Generate signals
+            # Generate signals (use smart watchlist for account size)
             logger.info("Scanning for trading signals...")
-            signals = self.signal_generator.get_best_signals(max_signals=5)
+            signals = self.signal_generator.scan_for_signals(symbols=self.watchlist)
+            signals = signals[:5]  # Top 5 signals
             
             if not signals:
                 logger.info("No trading signals found")
