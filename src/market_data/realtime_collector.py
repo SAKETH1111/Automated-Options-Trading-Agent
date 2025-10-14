@@ -58,10 +58,10 @@ class RealTimeDataCollector:
             symbol: deque(maxlen=300) for symbol in self.symbols  # 5 minutes at 1 tick/sec
         }
         
-        # Market hours - Note: Market times are still ET (9:30-16:00 ET), but we store in Central Time
-        self.market_timezone = pytz.timezone("America/Chicago")  # Central Time (Texas)
-        self.market_open = dt_time(8, 30)  # 9:30 ET = 8:30 CT
-        self.market_close = dt_time(15, 0)  # 16:00 ET = 15:00 CT
+        # Market hours - NYSE Eastern Time
+        self.market_timezone = pytz.timezone("America/New_York")  # NYSE Eastern Time
+        self.market_open = dt_time(9, 30)  # 9:30 AM ET
+        self.market_close = dt_time(16, 0)  # 4:00 PM ET
         
         # Statistics
         self.stats = {
@@ -133,8 +133,8 @@ class RealTimeDataCollector:
                         logger.debug(f"Error collecting tick for {symbol}: {e}")
                         self.stats['collection_errors'] += 1
                 
-                # Update stats (naive datetime for consistency)
-                self.stats['last_collection_time'] = datetime.now(self.market_timezone).replace(tzinfo=None)
+                # Update stats (UTC time)
+                self.stats['last_collection_time'] = datetime.utcnow()
                 
                 # Flush buffer if full
                 if len(self._tick_buffer) >= self.buffer_size:
@@ -209,11 +209,11 @@ class RealTimeDataCollector:
             market_state = self._get_market_state()
             
             # Create tick data object
-            # Use naive datetime (without tzinfo) so SQLite stores Central Time directly
-            current_time_ct = datetime.now(self.market_timezone).replace(tzinfo=None)
+            # Store in UTC for consistency
+            current_time_utc = datetime.utcnow()
             tick_data = IndexTickData(
                 symbol=symbol,
-                timestamp=current_time_ct,
+                timestamp=current_time_utc,
                 price=price,
                 bid=bid,
                 ask=ask,
@@ -234,10 +234,10 @@ class RealTimeDataCollector:
             # Add to buffer
             self._tick_buffer.append(tick_data)
             
-            # Update previous tick (naive datetime)
+            # Update previous tick (UTC time)
             self._previous_ticks[symbol] = {
                 'price': price,
-                'timestamp': datetime.now(self.market_timezone).replace(tzinfo=None)
+                'timestamp': datetime.utcnow()
             }
             
             # Update stats
@@ -306,8 +306,8 @@ class RealTimeDataCollector:
             if now.weekday() >= 5:
                 return "closed"
             
-            pre_market_open = dt_time(3, 0)  # 4:00 ET = 3:00 CT
-            after_hours_close = dt_time(19, 0)  # 20:00 ET = 19:00 CT
+            pre_market_open = dt_time(4, 0)  # 4:00 AM ET
+            after_hours_close = dt_time(20, 0)  # 8:00 PM ET
             
             if current_time < pre_market_open:
                 return "closed"

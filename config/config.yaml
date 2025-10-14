@@ -3,7 +3,7 @@ trading:
   market_hours:
     start: "09:30"
     end: "16:00"
-    timezone: "America/Chicago"  # Central Time (Texas)
+    timezone: "America/New_York"  # NYSE Eastern Time
   
   # Risk Management
   risk:
