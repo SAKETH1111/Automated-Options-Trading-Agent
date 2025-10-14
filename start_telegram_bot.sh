@@ -15,11 +15,11 @@ echo "╚═══════════════════════�
 echo ""
 
 # Check if already running
-if pgrep -f "telegram_report_bot.py" > /dev/null; then
+if pgrep -f "unified_telegram_bot.py" > /dev/null; then
     echo "⚠️  Telegram bot is already running"
     echo ""
     echo "To restart:"
-    echo "  1. Stop: pkill -f telegram_report_bot.py"
+    echo "  1. Stop: pkill -f unified_telegram_bot.py"
     echo "  2. Start: ./start_telegram_bot.sh"
     exit 1
 fi
@@ -35,8 +35,8 @@ if ! grep -q "TELEGRAM_BOT_TOKEN" .env 2>/dev/null; then
 fi
 
 # Start bot
-echo "🚀 Starting bot..."
-nohup python3 telegram_report_bot.py > logs/telegram_bot.log 2>&1 &
+echo "🚀 Starting unified bot..."
+nohup python3 unified_telegram_bot.py > logs/telegram_bot.log 2>&1 &
 BOT_PID=$!
 
 sleep 2
@@ -46,14 +46,14 @@ if ps -p $BOT_PID > /dev/null; then
     echo "✅ Telegram bot started (PID: $BOT_PID)"
     echo ""
     echo "📱 Available commands in Telegram:"
-    echo "   /start - Welcome message"
-    echo "   /report - Generate daily report"
-    echo "   /summary - Generate daily report (alias)"
-    echo "   /help - Show help"
+    echo "   Reports: /report, /summary, /signals"
+    echo "   Trading: /status, /positions, /pnl, /risk"
+    echo "   System: /ml, /pdt, /stop, /resume"
+    echo "   /help - Show all commands"
     echo ""
     echo "📋 Bot logs: tail -f logs/telegram_bot.log"
     echo ""
-    echo "To stop: pkill -f telegram_report_bot.py"
+    echo "To stop: pkill -f unified_telegram_bot.py"
 else
     echo "❌ Failed to start bot, check logs:"
     tail -20 logs/telegram_bot.log
