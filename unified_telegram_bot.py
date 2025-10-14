@@ -59,6 +59,8 @@ Welcome! I'll help you monitor and control your trading agent.
 /positions - View open positions
 /pnl - Check P&L
 /risk - View risk metrics
+/ml - ML model status
+/pdt - PDT compliance details
 /stop - Stop trading
 /resume - Resume trading
 
@@ -90,6 +92,8 @@ You'll also receive automatic daily reports at 4:00 PM CT!
 /positions - View all open positions
 /pnl - Profit & Loss summary
 /risk - Risk metrics
+/ml - ML model status
+/pdt - PDT compliance details
 
 *CONTROL:*
 /stop - Stop automated trading
@@ -300,6 +304,111 @@ Note: Full trading orchestrator with stop/resume is not yet implemented.
     async def resume_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /resume command"""
         await self.stop_command(update, context)  # Same message
+    
+    async def ml_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /ml command - Show ML model status"""
+        try:
+            import glob
+            from pathlib import Path
+            
+            # Check for ML models
+            model_dir = Path("models")
+            model_files = list(model_dir.glob("*.pkl")) if model_dir.exists() else []
+            
+            message = "🤖 *ML Model Status*\n\n"
+            
+            if model_files:
+                message += f"✅ Models Found: {len(model_files)}\n\n"
+                message += "*Recent Models:*\n"
+                
+                # Sort by modification time, newest first
+                sorted_models = sorted(model_files, key=lambda x: x.stat().st_mtime, reverse=True)
+                
+                for i, model_file in enumerate(sorted_models[:5], 1):
+                    import time
+                    mod_time = time.ctime(model_file.stat().st_mtime)
+                    size_kb = model_file.stat().st_size / 1024
+                    message += f"{i}. `{model_file.name}`\n"
+                    message += f"   Size: {size_kb:.1f} KB\n"
+                    message += f"   Updated: {mod_time}\n\n"
+                
+                message += "\n*Status:* ML models available for predictions"
+            else:
+                message += "⚠️ No ML models found\n\n"
+                message += "Models are typically generated after:\n"
+                message += "• Collecting sufficient trade data\n"
+                message += "• Running training scripts\n"
+                message += "• Minimum 30 trades completed\n\n"
+                message += "*Current Status:* Data collection phase"
+            
+            await update.message.reply_text(message, parse_mode='Markdown')
+        
+        except Exception as e:
+            await update.message.reply_text(f"❌ Error checking ML status: {e}")
+            logger.error(f"Error in ml command: {e}")
+    
+    async def pdt_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /pdt command - Show PDT compliance details"""
+        try:
+            account = self.alpaca.get_account()
+            equity = float(account.get('equity', 0))
+            
+            from src.risk_management.pdt_compliance import PDTComplianceManager
+            pdt_manager = PDTComplianceManager(equity)
+            pdt_info = pdt_manager.get_pdt_status()
+            
+            # Status emoji
+            if pdt_info.is_pdt_account:
+                status_emoji = "🔵"
+                account_type = "PDT Exempt (>$25K)"
+            else:
+                if pdt_info.status.value == "compliant":
+                    status_emoji = "🟢"
+                elif pdt_info.status.value == "warning":
+                    status_emoji = "🟡"
+                else:
+                    status_emoji = "🔴"
+                account_type = "PDT Restricted (<$25K)"
+            
+            message = f"""
+🚨 *PDT Compliance Status*
+
+{status_emoji} *Account Type:* {account_type}
+💰 *Equity:* ${equity:,.2f}
+
+📊 *Day Trade Status:*
+   Used: {pdt_info.day_trades_used}/{pdt_info.max_day_trades}
+   Status: {pdt_info.status.value.upper()}
+
+🔄 *Trading Limits:*
+"""
+            
+            if not pdt_info.is_pdt_account:
+                message += f"   ⚠️ Max 1 new position per day\n"
+                message += f"   ⚠️ Must hold overnight\n"
+                message += f"   ⚠️ Max {pdt_info.max_day_trades} day trades per 5 days\n\n"
+                
+                if pdt_info.can_trade:
+                    message += "✅ *Can open new positions*\n"
+                else:
+                    message += f"❌ *Cannot trade:* {pdt_info.suspension_reason}\n"
+                
+                # Warnings
+                warnings = pdt_manager.get_pdt_warnings()
+                if warnings:
+                    message += "\n⚠️ *Warnings:*\n"
+                    for warning in warnings:
+                        message += f"   • {warning}\n"
+            else:
+                message += "   ✅ No PDT restrictions\n"
+                message += "   ✅ Unlimited day trades\n"
+                message += "   ✅ Can close same-day positions\n"
+            
+            await update.message.reply_text(message, parse_mode='Markdown')
+        
+        except Exception as e:
+            await update.message.reply_text(f"❌ Error getting PDT status: {e}")
+            logger.error(f"Error in pdt command: {e}")
 
 
 def main():
@@ -333,6 +442,8 @@ def main():
         app.add_handler(CommandHandler("positions", bot.positions_command))
         app.add_handler(CommandHandler("pnl", bot.pnl_command))
         app.add_handler(CommandHandler("risk", bot.risk_command))
+        app.add_handler(CommandHandler("ml", bot.ml_command))
+        app.add_handler(CommandHandler("pdt", bot.pdt_command))
         app.add_handler(CommandHandler("stop", bot.stop_command))
         app.add_handler(CommandHandler("resume", bot.resume_command))
         
