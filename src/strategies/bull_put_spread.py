@@ -302,24 +302,81 @@ class BullPutSpreadStrategy(Strategy):
         
         return min(100, max(0, score))
     
-    def to_dict(self) -> Dict:
-        """Convert signal to dictionary for serialization"""
-        return {
-            "signal_id": self.signal_id,
-            "strategy_name": self.strategy_name,
-            "symbol": self.symbol,
-            "action": self.action,
-            "timestamp": self.timestamp.isoformat(),
-            "legs": self.legs,
-            "params": self.params,
-            "market_snapshot": self.market_snapshot,
-            "max_profit": self.max_profit,
-            "max_loss": self.max_loss,
-            "probability_of_profit": self.probability_of_profit,
-            "expected_credit": self.expected_credit,
-            "risk_reward_ratio": self.risk_reward_ratio,
-            "signal_quality": self.signal_quality,
-            "reason": self.reason,
-            "notes": self.notes
-        }
+    def should_exit(
+        self,
+        trade: Dict,
+        current_positions: List[Dict],
+        current_pnl: float,
+        current_pnl_pct: float
+    ) -> Optional[Dict]:
+        """
+        Determine if position should be exited
+        
+        Args:
+            trade: Trade record
+            current_positions: Current position data  
+            current_pnl: Current P&L in dollars
+            current_pnl_pct: Current P&L as percentage
+            
+        Returns:
+            Exit signal dict if should exit, None otherwise
+        """
+        max_profit = trade.get('max_profit', 0)
+        max_loss = abs(trade.get('max_loss', 0))
+        
+        # Take profit at 50% of max profit
+        if current_pnl >= max_profit * (self.take_profit_pct / 100):
+            return {
+                'action': 'close',
+                'reason': f'take_profit_{self.take_profit_pct}pct',
+                'pnl': current_pnl
+            }
+        
+        # Stop loss at 100% of max loss
+        if current_pnl <= -max_loss * (self.stop_loss_pct / 100):
+            return {
+                'action': 'close',
+                'reason': f'stop_loss_{self.stop_loss_pct}pct',
+                'pnl': current_pnl
+            }
+        
+        # Check expiration
+        expiration = trade.get('params', {}).get('expiration')
+        if expiration:
+            if isinstance(expiration, str):
+                from dateutil.parser import parse
+                exp_date = parse(expiration)
+            else:
+                exp_date = expiration
+            
+            days_to_exp = (exp_date - datetime.now()).days
+            
+            # Close 7 days before expiration
+            if days_to_exp <= 7:
+                return {
+                    'action': 'close',
+                    'reason': 'near_expiration',
+                    'pnl': current_pnl
+                }
+        
+        return None
+    
+    def should_roll(
+        self,
+        trade: Dict,
+        current_positions: List[Dict],
+        market_data: Dict
+    ) -> Optional[Dict]:
+        """
+        Determine if position should be rolled
+        
+        For bull put spreads, we typically don't roll
+        Instead we close and look for new opportunities
+        
+        Returns:
+            Roll signal dict if should roll, None otherwise
+        """
+        # Not implementing rolling for bull put spreads
+        # Will close and re-enter if conditions are favorable
+        return None
 

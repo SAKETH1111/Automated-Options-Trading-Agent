@@ -21,6 +21,14 @@ class CashSecuredPutStrategy(Strategy):
     def generate_signals(self, symbol: str, stock_data: dict, options_chain: list) -> list:
         """Generate signals - placeholder"""
         return []
+    
+    def should_exit(self, trade: dict, current_positions: list, current_pnl: float, current_pnl_pct: float):
+        """Exit logic - placeholder"""
+        return None
+    
+    def should_roll(self, trade: dict, current_positions: list, market_data: dict):
+        """Roll logic - placeholder"""
+        return None
 
 
 class IronCondorStrategy(Strategy):
@@ -34,6 +42,14 @@ class IronCondorStrategy(Strategy):
     def generate_signals(self, symbol: str, stock_data: dict, options_chain: list) -> list:
         """Generate signals - placeholder"""
         return []
+    
+    def should_exit(self, trade: dict, current_positions: list, current_pnl: float, current_pnl_pct: float):
+        """Exit logic - placeholder"""
+        return None
+    
+    def should_roll(self, trade: dict, current_positions: list, market_data: dict):
+        """Roll logic - placeholder"""
+        return None
 
 
 __all__ = [
