@@ -142,13 +142,18 @@ You'll also receive automatic daily reports at 4:00 PM CT!
             account = self.alpaca.get_account()
             equity = float(account.get('equity', 0))
             cash = float(account.get('cash', 0))
-            buying_power = float(account.get('buying_power', 0))
             
-            # Get open positions count
-            with self.db.get_session() as session:
-                open_positions = session.query(Trade).filter(Trade.status == 'open').count()
+            # Get PDT compliance status
+            from src.risk_management.pdt_compliance import PDTComplianceManager
+            pdt_manager = PDTComplianceManager(equity)
+            pdt_info = pdt_manager.get_pdt_status()
             
-            # Check data collector
+            # Get smart symbols for account size
+            from src.utils.symbol_selector import get_symbols_for_account, get_symbol_info
+            smart_symbols = get_symbols_for_account(equity)
+            symbol_info = get_symbol_info(equity)
+            
+            # Check if data collector is running
             import subprocess
             collector_running = False
             try:
@@ -161,19 +166,67 @@ You'll also receive automatic daily reports at 4:00 PM CT!
             except:
                 pass
             
-            status_icon = "✅" if collector_running else "⚠️"
+            # Get open positions
+            with self.db.get_session() as session:
+                open_trades = session.query(Trade).filter(Trade.status == 'open').all()
+                open_positions = len(open_trades)
+                current_pnl = sum(trade.pnl for trade in open_trades)
+                
+                # Get positions opened today
+                today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+                positions_today = session.query(Trade)\
+                    .filter(Trade.timestamp_enter >= today_start)\
+                    .count()
+            
+            # Trading status
+            if collector_running:
+                trading_status = "✅ ACTIVE (Scanning Markets)"
+            else:
+                trading_status = "⏸️ PAUSED (Not Running)"
+            
+            # PDT status emoji
+            if pdt_info.is_pdt_account:
+                pdt_emoji = "🔵"
+                pdt_status = "PDT EXEMPT"
+            else:
+                if pdt_info.status.value == "compliant":
+                    pdt_emoji = "🟢"
+                elif pdt_info.status.value == "warning":
+                    pdt_emoji = "🟡"
+                else:
+                    pdt_emoji = "🔴"
+                pdt_status = pdt_info.status.value.upper()
+            
+            # Get current time in Central Time
+            import pytz
+            utc_now = datetime.now(pytz.UTC)
+            ct_tz = pytz.timezone('America/Chicago')
+            ct_time = utc_now.astimezone(ct_tz)
             
             status_message = f"""
 📊 *Trading Agent Status*
 
-🤖 Data Collector: {status_icon} {'RUNNING' if collector_running else 'STOPPED'}
-💰 Equity: ${equity:,.2f}
+🤖 Trading: {trading_status}
+💰 Account: ${equity:,.2f}
 💵 Cash: ${cash:,.2f}
-💳 Buying Power: ${buying_power:,.2f}
 📈 Open Positions: {open_positions}
+💼 Current P&L: ${current_pnl:+,.2f}
 
-⏰ {datetime.now().strftime('%Y-%m-%d %I:%M %p')}
+{pdt_emoji} PDT Status: {pdt_status}
+⚡ Day Trades: {pdt_info.day_trades_used}/{pdt_info.max_day_trades}
+📅 Positions Today: {positions_today}/{'∞' if pdt_info.is_pdt_account else '1'}
+
+🎯 Account Tier: {symbol_info['tier'].upper()}
+📊 Smart Symbols: {', '.join(smart_symbols)}
+💲 Max Stock Price: ${symbol_info['max_stock_price']}
+
+⏰ {ct_time.strftime('%Y-%m-%d %H:%M:%S %Z')}
 """
+            
+            # Add warning if not running
+            if not collector_running:
+                status_message += "\n⚠️ _Data collector is not running. Start with:_\n`./start_simple.py &`"
+            
             await update.message.reply_text(status_message, parse_mode='Markdown')
         
         except Exception as e:
