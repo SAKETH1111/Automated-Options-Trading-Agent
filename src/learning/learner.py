@@ -32,8 +32,14 @@ class StrategyLearner:
         self.min_sample_size = self.learning_config.get("adjustment", {}).get("min_sample_size", 30)
         self.confidence_threshold = self.learning_config.get("adjustment", {}).get("confidence_threshold", 0.8)
         
-        self.analyzer = TradeAnalyzer()
         self.db = get_db()
+        
+        # Initialize analyzer with db_session
+        try:
+            self.analyzer = TradeAnalyzer(self.db)
+        except TypeError:
+            # TradeAnalyzer doesn't need db_session
+            self.analyzer = TradeAnalyzer()
         
         logger.info(f"Strategy Learner initialized (enabled: {self.enabled})")
     
