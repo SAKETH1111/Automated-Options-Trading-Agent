@@ -428,27 +428,90 @@ Real-time signal notifications
     
     async def stop_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /stop command"""
-        message = """
-⚠️ *Trading Control*
+        try:
+            import subprocess
+            
+            # Check if agent is running
+            result = subprocess.run(['pgrep', '-f', 'main.py'], capture_output=True, text=True)
+            
+            if not result.stdout.strip():
+                await update.message.reply_text("⚠️ Trading agent is not running")
+                return
+            
+            # Stop the agent
+            subprocess.run(['pkill', '-f', 'main.py'], check=False)
+            
+            message = """
+⏸️ *Trading Agent Stopped*
 
-To stop the trading agent:
-```
-pkill -f main.py
-pkill -f start_simple.py
-```
+The trading agent has been stopped.
 
-To restart:
-```
-./start_simple.py &
-```
+*What's stopped:*
+• Signal generation
+• Trade execution
+• Position monitoring
+• Scheduled tasks
 
-Note: Full orchestrator with /stop command coming soon.
+*Data collector* continues running independently.
+
+To restart: /resume
 """
-        await update.message.reply_text(message, parse_mode='Markdown')
+            await update.message.reply_text(message, parse_mode='Markdown')
+            logger.info("Trading agent stopped via Telegram command")
+        
+        except Exception as e:
+            await update.message.reply_text(f"❌ Error stopping agent: {e}")
+            logger.error(f"Error in stop command: {e}")
     
     async def resume_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /resume command"""
-        await self.stop_command(update, context)
+        try:
+            import subprocess
+            
+            # Check if already running
+            result = subprocess.run(['pgrep', '-f', 'main.py'], capture_output=True, text=True)
+            
+            if result.stdout.strip():
+                await update.message.reply_text("✅ Trading agent is already running")
+                return
+            
+            # Start the agent
+            subprocess.Popen(
+                ['nohup', 'python3', 'main.py'],
+                stdout=open('logs/trading_agent.log', 'a'),
+                stderr=subprocess.STDOUT,
+                cwd='/root/Automated-Options-Trading-Agent'
+            )
+            
+            import time
+            time.sleep(2)
+            
+            # Verify it started
+            result = subprocess.run(['pgrep', '-f', 'main.py'], capture_output=True, text=True)
+            
+            if result.stdout.strip():
+                message = """
+✅ *Trading Agent Started*
+
+The trading agent is now running.
+
+*Active features:*
+• Signal generation
+• Paper trade execution
+• Position monitoring
+• Risk management
+• PDT compliance
+
+Check status with: /status
+"""
+                await update.message.reply_text(message, parse_mode='Markdown')
+                logger.info("Trading agent started via Telegram command")
+            else:
+                await update.message.reply_text("❌ Failed to start agent. Check logs:\n`tail -30 logs/trading_agent.log`", parse_mode='Markdown')
+        
+        except Exception as e:
+            await update.message.reply_text(f"❌ Error starting agent: {e}")
+            logger.error(f"Error in resume command: {e}")
 
 
 def main():
