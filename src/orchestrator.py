@@ -16,6 +16,7 @@ from src.automation.position_manager import AutomatedPositionManager
 from src.market_data.collector import MarketDataCollector
 from src.market_data.realtime_collector import RealTimeDataCollector
 from src.signals.generator import SignalGenerator
+from src.signals.signal_logger import SignalLogger
 from src.alerts.alert_manager import AlertManager
 from src.analysis.analyzer import MarketAnalyzer
 from src.learning.learner import StrategyLearner
@@ -73,6 +74,7 @@ class TradingOrchestrator:
         logger.info(f"   Spread Width: {symbol_info['preferred_spread_width']}")
         
         self.signal_generator = SignalGenerator(self.market_data, self.config)
+        self.signal_logger = SignalLogger()
         self.trade_executor = AutomatedOrderExecutor(self.db, self.alpaca)
         self.position_monitor = AutomatedPositionManager(self.db, self.alpaca)
         self.alert_manager = AlertManager()
@@ -296,6 +298,19 @@ class TradingOrchestrator:
             
             logger.info(f"Found {len(signals)} potential signals")
             
+            # Log all signals to database
+            logged_count = self.signal_logger.log_signals_batch(signals)
+            logger.info(f"Logged {logged_count} signals to database")
+            
+            # Send Telegram notification about signals found
+            if signals:
+                top_signal = signals[0]
+                self.alert_manager.send_alert(
+                    "signals_found",
+                    f"Found {len(signals)} signals. Top: {top_signal['symbol']} - Quality: {top_signal['signal_quality']:.0f}/100",
+                    "info"
+                )
+            
             # Execute top signals (PDT-compliant limits)
             max_signals = 1 if pdt_info.is_pdt_account else 3  # PDT accounts: 1 position per day
             
@@ -320,6 +335,9 @@ class TradingOrchestrator:
                 trade_id = self.trade_executor.execute_signal(signal)
                 
                 if trade_id:
+                    # Mark signal as executed in database
+                    self.signal_logger.log_signal(signal, executed=True)
+                    
                     logger.info(f"✅ Trade executed: {trade_id}")
                     
                     # Log PDT status after trade
