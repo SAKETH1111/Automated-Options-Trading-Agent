@@ -86,8 +86,16 @@ class PolygonFlatFilesClient:
             List of available dates in YYYY-MM-DD format
         """
         try:
-            # Use the flatfile bucket with correct options prefix
-            prefix = f"us_options_opra/{data_type}/"
+            # Map data types to correct S3 prefixes
+            data_type_mapping = {
+                'trades': 'trades_v1',
+                'quotes': 'quotes_v1', 
+                'aggregates': 'day_aggs_v1',
+                'minute_aggregates': 'minute_aggs_v1'
+            }
+            
+            s3_data_type = data_type_mapping.get(data_type, data_type)
+            prefix = f"us_options_opra/{s3_data_type}/"
             
             # List objects in the bucket
             response = self.s3_client.list_objects_v2(
@@ -99,11 +107,39 @@ class PolygonFlatFilesClient:
             dates = []
             if 'CommonPrefixes' in response:
                 for prefix_obj in response['CommonPrefixes']:
-                    # Extract date from path like "options/trades/2024-01-15/"
+                    # Extract year from path like "us_options_opra/trades_v1/2024/"
                     path = prefix_obj['Prefix']
-                    date_part = path.replace(prefix, '').rstrip('/')
-                    if len(date_part) == 10 and date_part.count('-') == 2:  # YYYY-MM-DD format
-                        dates.append(date_part)
+                    year_part = path.replace(prefix, '').rstrip('/')
+                    if year_part.isdigit() and len(year_part) == 4:
+                        # Now get months for this year
+                        year_prefix = f"{prefix}{year_part}/"
+                        year_response = self.s3_client.list_objects_v2(
+                            Bucket=self.bucket_name,
+                            Prefix=year_prefix,
+                            Delimiter="/"
+                        )
+                        
+                        if 'CommonPrefixes' in year_response:
+                            for month_obj in year_response['CommonPrefixes']:
+                                month_path = month_obj['Prefix']
+                                month_part = month_path.replace(year_prefix, '').rstrip('/')
+                                if month_part.isdigit() and len(month_part) == 2:
+                                    # Now get files for this month (not directories)
+                                    month_prefix = f"{year_prefix}{month_part}/"
+                                    month_response = self.s3_client.list_objects_v2(
+                                        Bucket=self.bucket_name,
+                                        Prefix=month_prefix
+                                    )
+                                    
+                                    if 'Contents' in month_response:
+                                        for file_obj in month_response['Contents']:
+                                            file_key = file_obj['Key']
+                                            # Extract date from filename like "2024-01-02.csv.gz"
+                                            filename = file_key.split('/')[-1]
+                                            if filename.endswith('.csv.gz'):
+                                                date_part = filename.replace('.csv.gz', '')
+                                                if len(date_part) == 10 and date_part.count('-') == 2:
+                                                    dates.append(date_part)
             
             dates.sort()
             logger.info(f"Found {len(dates)} available dates for {data_type}")
@@ -141,8 +177,18 @@ class PolygonFlatFilesClient:
                 logger.info(f"File already exists: {local_file}")
                 return local_file
             
-            # Download from S3 using the correct path structure
-            s3_key = f"us_options_opra/{data_type}/{date}/{data_type}_{date}.csv.gz"
+            # Map data types to correct S3 prefixes
+            data_type_mapping = {
+                'trades': 'trades_v1',
+                'quotes': 'quotes_v1', 
+                'aggregates': 'day_aggs_v1',
+                'minute_aggregates': 'minute_aggs_v1'
+            }
+            
+            s3_data_type = data_type_mapping.get(data_type, data_type)
+            # Convert date from YYYY-MM-DD to YYYY/MM/YYYY-MM-DD.csv.gz
+            year, month, day = date.split('-')
+            s3_key = f"us_options_opra/{s3_data_type}/{year}/{month}/{date}.csv.gz"
             
             logger.info(f"Downloading {data_type} data for {date}...")
             logger.info(f"S3 Key: {s3_key}")

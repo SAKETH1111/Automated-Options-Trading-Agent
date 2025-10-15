@@ -817,12 +817,12 @@ class PolygonOptionsClient:
             exchanges = []
             for exchange in exchanges_list:
                 exchanges.append({
-                    'id': exchange.id,
-                    'type': exchange.type,
-                    'market': exchange.market,
-                    'mic': exchange.mic,
-                    'name': exchange.name,
-                    'tape': exchange.tape if hasattr(exchange, 'tape') else None
+                    'id': getattr(exchange, 'id', None),
+                    'type': getattr(exchange, 'type', None),
+                    'market': getattr(exchange, 'market', None),
+                    'mic': getattr(exchange, 'mic', None),
+                    'name': getattr(exchange, 'name', None),
+                    'tape': getattr(exchange, 'tape', None)
                 })
             
             return exchanges

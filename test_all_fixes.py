@@ -118,7 +118,7 @@ def test_websocket_plan_limitation():
     try:
         from src.market_data.polygon_websocket import PolygonOptionsWebSocketClient
         
-        client = PolygonOptionsWebSocketClient(api_key="test", handler=lambda x: None)
+        client = PolygonOptionsWebSocketClient(api_key="test")
         logger.info("✅ PolygonOptionsWebSocketClient initialized")
         
         # Test subscription (should work)
