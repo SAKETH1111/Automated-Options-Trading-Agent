@@ -175,12 +175,12 @@ Real-time signal notifications
             smart_symbols = get_symbols_for_account(equity)
             symbol_info = get_symbol_info(equity)
             
-            # Check collector
+            # Check main trading agent
             import subprocess
-            collector_running = False
+            agent_running = False
             try:
-                result = subprocess.run(['pgrep', '-f', 'start_simple.py'], capture_output=True, text=True)
-                collector_running = bool(result.stdout.strip())
+                result = subprocess.run(['pgrep', '-f', 'main.py'], capture_output=True, text=True)
+                agent_running = bool(result.stdout.strip())
             except:
                 pass
             
@@ -193,7 +193,7 @@ Real-time signal notifications
                 today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
                 positions_today = session.query(Trade).filter(Trade.timestamp_enter >= today_start).count()
             
-            trading_status = "✅ ACTIVE (Scanning Markets)" if collector_running else "⏸️  PAUSED (Not Running)"
+            trading_status = "✅ ACTIVE (Scanning Markets)" if agent_running else "⏸️  PAUSED (Not Running)"
             
             # PDT status
             if not pdt_info.is_pdt_account:
@@ -227,8 +227,8 @@ Real-time signal notifications
 ⏰ {ct_time.strftime('%Y-%m-%d %H:%M:%S %Z')}
 """
             
-            if not collector_running:
-                status_message += "\n⚠️ _Data collector not running_"
+            if not agent_running:
+                status_message += "\n⚠️ _Trading agent not running_"
             
             await update.message.reply_text(status_message, parse_mode='Markdown')
         
