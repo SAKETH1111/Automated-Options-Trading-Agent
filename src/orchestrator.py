@@ -1,8 +1,9 @@
 """Main orchestrator that coordinates all trading agent components"""
 
+import os
 import time
 from datetime import datetime, time as dt_time
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 import pytz
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -15,6 +16,7 @@ from src.automation.order_executor import AutomatedOrderExecutor
 from src.automation.position_manager import AutomatedPositionManager
 from src.market_data.collector import MarketDataCollector
 from src.market_data.realtime_collector import RealTimeDataCollector
+from src.market_data.realtime_integration import TradingAgentWebSocketIntegration
 from src.signals.generator import SignalGenerator
 from src.signals.signal_logger import SignalLogger
 from src.alerts.alert_manager import AlertManager
@@ -89,6 +91,20 @@ class TradingOrchestrator:
             collect_interval=realtime_config.get("collect_interval_seconds", 1.0),
             buffer_size=realtime_config.get("buffer_size", 100)
         )
+        
+        # Initialize WebSocket integration for real-time options data
+        self.websocket_integration = None
+        if os.getenv('POLYGON_API_KEY'):
+            try:
+                self.websocket_integration = TradingAgentWebSocketIntegration(
+                    trading_agent=self,
+                    api_key=os.getenv('POLYGON_API_KEY')
+                )
+                logger.info("✅ WebSocket integration initialized")
+            except Exception as e:
+                logger.warning(f"⚠️ WebSocket integration failed: {e}")
+        else:
+            logger.info("ℹ️ WebSocket integration not available (POLYGON_API_KEY not set)")
         
         # Market hours configuration - NYSE Eastern Time
         trading_config = self.config.get("trading", {})
@@ -535,6 +551,130 @@ class TradingOrchestrator:
         except Exception as e:
             logger.error(f"Error getting status: {e}")
             return {"error": str(e)}
+    
+    # ==================== WebSocket Integration Methods ====================
+    
+    def start_websocket_monitoring(self, positions: List[Dict] = None) -> bool:
+        """
+        Start WebSocket monitoring for real-time options data
+        
+        Args:
+            positions: List of positions to monitor (if None, gets current positions)
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        if not self.websocket_integration:
+            logger.warning("WebSocket integration not available")
+            return False
+        
+        try:
+            # Get current positions if none provided
+            if positions is None:
+                positions = self.get_current_positions()
+            
+            if not positions:
+                logger.info("No positions to monitor")
+                return True
+            
+            # Extract option symbols
+            option_positions = [pos for pos in positions if pos.get('option_symbol')]
+            
+            if not option_positions:
+                logger.info("No option positions to monitor")
+                return True
+            
+            # Start monitoring
+            success = self.websocket_integration.start_position_monitoring(option_positions)
+            
+            if success:
+                logger.info(f"✅ Started WebSocket monitoring for {len(option_positions)} option positions")
+            else:
+                logger.error("❌ Failed to start WebSocket monitoring")
+            
+            return success
+        
+        except Exception as e:
+            logger.error(f"Error starting WebSocket monitoring: {e}")
+            return False
+    
+    def stop_websocket_monitoring(self):
+        """Stop WebSocket monitoring"""
+        if self.websocket_integration:
+            self.websocket_integration.stop_position_monitoring()
+            logger.info("Stopped WebSocket monitoring")
+    
+    def get_websocket_stats(self) -> Dict:
+        """Get WebSocket integration statistics"""
+        if not self.websocket_integration:
+            return {"available": False}
+        
+        try:
+            stats = self.websocket_integration.get_integration_stats()
+            stats["available"] = True
+            return stats
+        except Exception as e:
+            logger.error(f"Error getting WebSocket stats: {e}")
+            return {"available": True, "error": str(e)}
+    
+    def get_position_realtime_analysis(self, option_symbol: str) -> Optional[Dict]:
+        """
+        Get real-time analysis for a specific option position
+        
+        Args:
+            option_symbol: Option symbol to analyze
+            
+        Returns:
+            Real-time analysis data or None
+        """
+        if not self.websocket_integration:
+            logger.warning("WebSocket integration not available")
+            return None
+        
+        try:
+            return self.websocket_integration.get_position_analysis(option_symbol)
+        except Exception as e:
+            logger.error(f"Error getting real-time analysis for {option_symbol}: {e}")
+            return None
+    
+    def get_current_positions(self) -> List[Dict]:
+        """
+        Get current open positions from database
+        
+        Returns:
+            List of position dictionaries
+        """
+        try:
+            with self.db.get_session() as session:
+                from src.database.models import Trade, Position
+                
+                # Get open trades with their positions
+                open_trades = session.query(Trade).filter(
+                    Trade.status == "open"
+                ).all()
+                
+                positions = []
+                for trade in open_trades:
+                    for position in trade.positions:
+                        positions.append({
+                            'trade_id': trade.trade_id,
+                            'symbol': trade.symbol,
+                            'option_symbol': position.option_symbol,
+                            'option_type': position.option_type,
+                            'strike': position.strike,
+                            'expiration': position.expiration,
+                            'side': position.side,
+                            'quantity': position.quantity,
+                            'entry_price': position.entry_price,
+                            'current_price': position.current_price,
+                            'unrealized_pnl': position.unrealized_pnl
+                        })
+                
+                return positions
+        
+        except Exception as e:
+            logger.error(f"Error getting current positions: {e}")
+            return []
 
 
 def main():

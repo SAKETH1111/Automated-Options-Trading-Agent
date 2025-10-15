@@ -6,6 +6,7 @@ Wrapper that combines RealTimeDataCollector, Alpaca, and Polygon data sources
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 import os
+import time
 
 from loguru import logger
 
@@ -199,7 +200,7 @@ class MarketDataCollector:
                 
                 # Rate limiting for Polygon API (5 calls per second max)
                 import time
-                time.sleep(0.2)  # 200ms between calls
+                time.sleep(0.25)  # 250ms between calls (4 calls per second)
                 
                 # Get REAL option snapshot for pricing
                 snapshot = self.polygon.get_option_snapshot(contract['ticker'])
@@ -376,4 +377,301 @@ class MarketDataCollector:
         """Get historical bars - delegates to Alpaca client"""
         start_date = (datetime.now() - timedelta(days=days)).isoformat()
         return self.alpaca.get_historical_bars(symbol, start_date, timeframe="1Day")
+    
+    # ==================== Enhanced Polygon Options Methods ====================
+    
+    def get_option_technical_indicators(
+        self,
+        option_ticker: str,
+        indicators: List[str] = None
+    ) -> Dict:
+        """
+        Get technical indicators for an option contract
+        
+        Args:
+            option_ticker: Option ticker symbol
+            indicators: List of indicators to fetch ['sma', 'ema', 'macd', 'rsi']
+            
+        Returns:
+            Dict with technical indicator data
+        """
+        if not self.polygon:
+            logger.warning("Polygon not available for technical indicators")
+            return {}
+        
+        if indicators is None:
+            indicators = ['sma', 'ema', 'macd', 'rsi']
+        
+        result = {}
+        
+        try:
+            for indicator in indicators:
+                if indicator == 'sma':
+                    result['sma'] = self.polygon.get_sma(option_ticker)
+                elif indicator == 'ema':
+                    result['ema'] = self.polygon.get_ema(option_ticker)
+                elif indicator == 'macd':
+                    result['macd'] = self.polygon.get_macd(option_ticker)
+                elif indicator == 'rsi':
+                    result['rsi'] = self.polygon.get_rsi(option_ticker)
+                
+                # Rate limiting
+                time.sleep(0.1)
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error fetching technical indicators for {option_ticker}: {e}")
+            return {}
+    
+    def get_option_historical_data(
+        self,
+        option_ticker: str,
+        days: int = 30,
+        timespan: str = "day"
+    ) -> Optional[Dict]:
+        """
+        Get historical data for an option contract
+        
+        Args:
+            option_ticker: Option ticker symbol
+            days: Number of days to look back
+            timespan: minute, hour, day, week, month, quarter, year
+            
+        Returns:
+            Dict with historical data
+        """
+        if not self.polygon:
+            logger.warning("Polygon not available for historical data")
+            return None
+        
+        try:
+            to_date = datetime.now().strftime('%Y-%m-%d')
+            from_date = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
+            
+            return self.polygon.get_custom_bars(
+                option_ticker=option_ticker,
+                from_date=from_date,
+                to_date=to_date,
+                timespan=timespan
+            )
+            
+        except Exception as e:
+            logger.error(f"Error fetching historical data for {option_ticker}: {e}")
+            return None
+    
+    def get_market_operations(self) -> Dict:
+        """
+        Get market operations data (status, holidays, exchanges)
+        
+        Returns:
+            Dict with market operations data
+        """
+        if not self.polygon:
+            logger.warning("Polygon not available for market operations")
+            return {}
+        
+        try:
+            return {
+                'market_status': self.polygon.get_market_status(),
+                'holidays': self.polygon.get_market_holidays(),
+                'exchanges': self.polygon.get_exchanges(),
+                'condition_codes': self.polygon.get_condition_codes()
+            }
+            
+        except Exception as e:
+            logger.error(f"Error fetching market operations: {e}")
+            return {}
+    
+    def get_option_chain_snapshot(self, underlying: str) -> Optional[Dict]:
+        """
+        Get option chain snapshot for an underlying asset
+        
+        Args:
+            underlying: Underlying ticker symbol
+            
+        Returns:
+            Dict with option chain snapshot
+        """
+        if not self.polygon:
+            logger.warning("Polygon not available for option chain snapshot")
+            return None
+        
+        try:
+            return self.polygon.get_option_chain_snapshot(underlying)
+            
+        except Exception as e:
+            logger.error(f"Error fetching option chain snapshot for {underlying}: {e}")
+            return None
+    
+    def get_enhanced_options_chain(
+        self,
+        symbol: str,
+        target_dte: int = 35,
+        option_type: str = "put",
+        use_advanced_filtering: bool = True
+    ) -> List[Dict]:
+        """
+        Get enhanced options chain with advanced filtering and analytics
+        
+        Args:
+            symbol: Underlying symbol
+            target_dte: Target days to expiration
+            option_type: 'put' or 'call'
+            use_advanced_filtering: Whether to use advanced filtering
+            
+        Returns:
+            List of enhanced option contracts
+        """
+        try:
+            logger.info(f"Fetching enhanced options chain for {symbol}")
+            
+            if not self.polygon:
+                logger.warning("Polygon not available, falling back to basic chain")
+                return self.get_options_chain_enriched(symbol, target_dte, option_type)
+            
+            # Get current stock price
+            stock_data = self.get_stock_data(symbol)
+            if not stock_data:
+                logger.warning(f"No stock data for {symbol}")
+                return []
+            
+            stock_price = stock_data['price']
+            
+            if use_advanced_filtering:
+                # Use advanced filtering to get high-quality options
+                options = self.polygon.get_high_volume_options(
+                    underlying=symbol,
+                    min_volume=500,
+                    min_open_interest=2000,
+                    dte_min=target_dte - 10,
+                    dte_max=target_dte + 10
+                )
+                
+                # Filter by option type
+                options = [opt for opt in options if opt.get('contract_type') == option_type]
+                
+                # Add additional analytics
+                for option in options:
+                    # Add technical indicators
+                    indicators = self.get_option_technical_indicators(
+                        option['ticker'],
+                        ['rsi', 'sma']
+                    )
+                    option['technical_indicators'] = indicators
+                    
+                    # Add historical data
+                    historical = self.get_option_historical_data(option['ticker'], days=30)
+                    option['historical_data'] = historical
+                    
+                    # Rate limiting
+                    time.sleep(0.1)
+                
+                logger.info(f"Enhanced chain loaded {len(options)} high-quality options for {symbol}")
+                return options
+            else:
+                # Use basic chain
+                return self._get_polygon_options(symbol, stock_price, target_dte, option_type)
+                
+        except Exception as e:
+            logger.error(f"Error fetching enhanced options chain for {symbol}: {e}")
+            return []
+    
+    def get_options_by_delta_range(
+        self,
+        symbol: str,
+        min_delta: float,
+        max_delta: float,
+        contract_type: str = "put",
+        dte_min: int = 20,
+        dte_max: int = 60
+    ) -> List[Dict]:
+        """
+        Get options within a specific delta range
+        
+        Args:
+            symbol: Underlying symbol
+            min_delta: Minimum delta value
+            max_delta: Maximum delta value
+            contract_type: 'call' or 'put'
+            dte_min: Minimum days to expiration
+            dte_max: Maximum days to expiration
+            
+        Returns:
+            List of options in delta range
+        """
+        if not self.polygon:
+            logger.warning("Polygon not available for delta filtering")
+            return []
+        
+        try:
+            return self.polygon.get_options_by_delta_range(
+                underlying=symbol,
+                min_delta=min_delta,
+                max_delta=max_delta,
+                contract_type=contract_type,
+                dte_min=dte_min,
+                dte_max=dte_max
+            )
+            
+        except Exception as e:
+            logger.error(f"Error filtering options by delta range: {e}")
+            return []
+    
+    def get_option_trades_quotes(
+        self,
+        option_ticker: str,
+        days: int = 7
+    ) -> Dict:
+        """
+        Get historical trades and quotes for an option
+        
+        Args:
+            option_ticker: Option ticker symbol
+            days: Number of days to look back
+            
+        Returns:
+            Dict with trades and quotes data
+        """
+        if not self.polygon:
+            logger.warning("Polygon not available for trades/quotes")
+            return {}
+        
+        try:
+            to_date = datetime.now().strftime('%Y-%m-%d')
+            from_date = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
+            
+            return {
+                'trades': self.polygon.get_trades(option_ticker, from_date, to_date),
+                'quotes': self.polygon.get_quotes(option_ticker, from_date, to_date),
+                'last_trade': self.polygon.get_last_trade(option_ticker)
+            }
+            
+        except Exception as e:
+            logger.error(f"Error fetching trades/quotes for {option_ticker}: {e}")
+            return {}
+    
+    def get_unified_market_snapshot(
+        self,
+        symbols: List[str]
+    ) -> Optional[Dict]:
+        """
+        Get unified snapshot for multiple symbols (stocks and options)
+        
+        Args:
+            symbols: List of ticker symbols
+            
+        Returns:
+            Dict with unified snapshot data
+        """
+        if not self.polygon:
+            logger.warning("Polygon not available for unified snapshot")
+            return None
+        
+        try:
+            return self.polygon.get_unified_snapshot(symbols)
+            
+        except Exception as e:
+            logger.error(f"Error fetching unified snapshot: {e}")
+            return None
 
