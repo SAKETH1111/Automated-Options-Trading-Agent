@@ -193,21 +193,25 @@ class MarketDataCollector:
                 exp_date = datetime.strptime(contract['expiration_date'], '%Y-%m-%d')
                 dte = (exp_date - datetime.now()).days
                 
-                # Filter by DTE range - be very lenient for testing
-                if not (1 <= dte <= 60):  # Accept 1-60 DTE for testing
+                # Filter by DTE range - include expired options for testing
+                if not (-5 <= dte <= 60):  # Accept -5 to 60 DTE for testing (include some expired)
                     continue
                 
                 # Get option snapshot for pricing
                 snapshot = self.polygon.get_option_snapshot(contract['ticker'])
                 
                 if not snapshot:
+                    logger.debug(f"No snapshot for {contract['ticker']}")
                     continue
                 
                 bid = snapshot.get('bid', 0)
                 ask = snapshot.get('ask', 0)
                 mid = (bid + ask) / 2 if (bid and ask) else 0
                 
+                logger.debug(f"Option {contract['ticker']}: bid={bid}, ask={ask}, mid={mid}")
+                
                 if mid <= 0:
+                    logger.debug(f"Skipping {contract['ticker']}: no valid mid price")
                     continue
                 
                 # Calculate Greeks if not provided
