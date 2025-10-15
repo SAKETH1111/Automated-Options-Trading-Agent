@@ -132,23 +132,29 @@ class SignalGenerator:
             price = stock_data.get("price", 0)
             volume = stock_data.get("volume", 0)
             
+            logger.debug(f"{symbol} filters - Price: ${price:.2f}, Volume: {volume:,}")
+            
             # Price range
             min_price = scanning_config.get("min_stock_price", 20)
             max_price = scanning_config.get("max_stock_price", 500)
             
             if not (min_price <= price <= max_price):
+                logger.debug(f"{symbol} filtered: Price ${price:.2f} outside range ${min_price}-${max_price}")
                 return False
             
-            # Volume
-            min_volume = scanning_config.get("min_avg_volume", 1000000)
+            # Volume - make it more lenient for testing
+            min_volume = scanning_config.get("min_avg_volume", 100000)  # Reduced from 1M to 100K
             if volume < min_volume:
+                logger.debug(f"{symbol} filtered: Volume {volume:,} below minimum {min_volume:,}")
                 return False
             
             # Spread check
             spread_pct = stock_data.get("spread_pct", 0)
             if spread_pct > 1.0:  # More than 1% spread
+                logger.debug(f"{symbol} filtered: Spread {spread_pct:.2f}% too wide")
                 return False
             
+            logger.debug(f"{symbol} passed basic filters")
             return True
         
         except Exception as e:

@@ -82,10 +82,11 @@ class MarketDataCollector:
             spread_pct = (spread / price * 100) if price > 0 else 0
             
             # Get historical bars for IV rank calculation
+            from alpaca.data.timeframe import TimeFrame
             bars = self.alpaca.get_historical_bars(
                 symbol,
                 start_date=(datetime.now() - timedelta(days=365)).isoformat(),
-                timeframe="1Day"
+                timeframe=TimeFrame.Day
             )
             
             # Calculate IV rank (simplified - would use historical IV in production)
