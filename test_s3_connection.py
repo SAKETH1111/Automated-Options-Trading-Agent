@@ -22,7 +22,7 @@ def test_s3_connection():
             region_name='us-east-1'
         )
         
-        bucket_name = 'flatfile'
+        bucket_name = 'flatfiles'
         
         # Test 1: List bucket contents
         logger.info("1. Testing bucket access...")

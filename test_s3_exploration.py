@@ -20,7 +20,7 @@ def explore_s3_bucket():
             region_name='us-east-1'
         )
         
-        bucket_name = 'flatfile'
+        bucket_name = 'flatfiles'
         
         # Test 1: List all objects in the bucket (with limit)
         logger.info("1. Listing all objects in bucket (first 20)...")

@@ -15,7 +15,7 @@ POLYGON_S3_CONFIG = {
     'access_key_id': '88976b8e-f103-4d07-959f-4d13ce686dd2',
     'secret_access_key': 'wWrUjjcksqLDPntXbJb72kiFzAwyqIpY',
     'region_name': 'us-east-1',
-    'bucket_name': 'flatfile'
+    'bucket_name': 'flatfiles'
 }
 
 # Data paths
