@@ -747,10 +747,10 @@ class PolygonOptionsClient:
                 return None
             
             return {
-                'market': status_data.market,
-                'server_time': status_data.serverTime,
-                'exchanges': status_data.exchanges if hasattr(status_data, 'exchanges') else None,
-                'currencies': status_data.currencies if hasattr(status_data, 'currencies') else None
+                'market': getattr(status_data, 'market', 'unknown'),
+                'server_time': getattr(status_data, 'serverTime', None),
+                'exchanges': getattr(status_data, 'exchanges', None),
+                'currencies': getattr(status_data, 'currencies', None)
             }
             
         except Exception as e:
@@ -769,11 +769,17 @@ class PolygonOptionsClient:
             
             holidays_data = self.client.get_market_holidays()
             
-            if not holidays_data or not holidays_data.results:
+            if not holidays_data:
+                return None
+            
+            # Handle both list and object with results attribute
+            holidays_list = holidays_data if isinstance(holidays_data, list) else getattr(holidays_data, 'results', [])
+            
+            if not holidays_list:
                 return None
             
             holidays = []
-            for holiday in holidays_data.results:
+            for holiday in holidays_list:
                 holidays.append({
                     'date': holiday.date,
                     'name': holiday.name,
@@ -799,11 +805,17 @@ class PolygonOptionsClient:
             
             exchanges_data = self.client.get_exchanges()
             
-            if not exchanges_data or not exchanges_data.results:
+            if not exchanges_data:
+                return None
+            
+            # Handle both list and object with results attribute
+            exchanges_list = exchanges_data if isinstance(exchanges_data, list) else getattr(exchanges_data, 'results', [])
+            
+            if not exchanges_list:
                 return None
             
             exchanges = []
-            for exchange in exchanges_data.results:
+            for exchange in exchanges_list:
                 exchanges.append({
                     'id': exchange.id,
                     'type': exchange.type,

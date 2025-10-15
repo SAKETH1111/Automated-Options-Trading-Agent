@@ -86,8 +86,8 @@ class PolygonFlatFilesClient:
             List of available dates in YYYY-MM-DD format
         """
         try:
-            # Use the flatfile bucket with data type prefix
-            prefix = f"options/{data_type}/"
+            # Use the flatfile bucket with correct options prefix
+            prefix = f"us_options_opra/{data_type}/"
             
             # List objects in the bucket
             response = self.s3_client.list_objects_v2(
@@ -142,7 +142,7 @@ class PolygonFlatFilesClient:
                 return local_file
             
             # Download from S3 using the correct path structure
-            s3_key = f"options/{data_type}/{date}/{data_type}_{date}.csv.gz"
+            s3_key = f"us_options_opra/{data_type}/{date}/{data_type}_{date}.csv.gz"
             
             logger.info(f"Downloading {data_type} data for {date}...")
             logger.info(f"S3 Key: {s3_key}")
