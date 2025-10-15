@@ -193,8 +193,8 @@ class MarketDataCollector:
                 exp_date = datetime.strptime(contract['expiration_date'], '%Y-%m-%d')
                 dte = (exp_date - datetime.now()).days
                 
-                # Filter by DTE range - be more lenient
-                if not (target_dte - 15 <= dte <= target_dte + 15):
+                # Filter by DTE range - be very lenient for testing
+                if not (1 <= dte <= 60):  # Accept 1-60 DTE for testing
                     continue
                 
                 # Get option snapshot for pricing
