@@ -28,7 +28,7 @@ scanning:
   min_stock_price: 20
   max_stock_price: 500
   min_market_cap: 5000000000  # 5B
-  min_avg_volume: 1000000
+  min_avg_volume: 100000  # Reduced for testing
   
   # Options Filters
   min_open_interest: 100
@@ -39,10 +39,12 @@ scanning:
   min_iv_rank: 25
   max_iv_rank: 95
   
-  # Universe - SPY & QQQ ONLY (Highly liquid index ETFs)
+  # Universe - Testing symbols for smaller accounts
   watchlist:
-    - SPY  # S&P 500 ETF - Most liquid options in the world
-    - QQQ  # Nasdaq-100 ETF - Tech-heavy, higher volatility
+    - GDX  # Gold miners ETF
+    - XLF  # Financial sector ETF  
+    - TLT  # 20+ Year Treasury ETF
+    - EWZ  # Brazil ETF
 
 # Strategy Parameters
 strategies:

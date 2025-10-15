@@ -133,6 +133,7 @@ class SignalGenerator:
             volume = stock_data.get("volume", 0)
             
             logger.debug(f"{symbol} filters - Price: ${price:.2f}, Volume: {volume:,}")
+            logger.debug(f"Scanning config: {scanning_config}")
             
             # Price range
             min_price = scanning_config.get("min_stock_price", 20)
@@ -144,6 +145,7 @@ class SignalGenerator:
             
             # Volume - make it more lenient for testing
             min_volume = scanning_config.get("min_avg_volume", 100000)  # Reduced from 1M to 100K
+            logger.debug(f"Min volume from config: {min_volume}")
             if volume < min_volume:
                 logger.debug(f"{symbol} filtered: Volume {volume:,} below minimum {min_volume:,}")
                 return False

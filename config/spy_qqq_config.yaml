@@ -36,15 +36,17 @@ trading:
 
 # Market Scanning - SPY & QQQ ONLY
 scanning:
-  # Only trade SPY and QQQ
+  # Testing symbols for smaller accounts
   watchlist:
-    - SPY  # S&P 500 ETF
-    - QQQ  # Nasdaq-100 ETF
+    - GDX  # Gold miners ETF
+    - XLF  # Financial sector ETF  
+    - TLT  # 20+ Year Treasury ETF
+    - EWZ  # Brazil ETF
   
   # Index-specific filters (very liquid)
-  min_stock_price: 200  # Both trade above this
-  max_stock_price: 600
-  min_avg_volume: 50000000  # Ultra-high volume
+  min_stock_price: 20  # Lowered for testing with GDX/XLF/TLT/EWZ
+  max_stock_price: 500
+  min_avg_volume: 100000  # Reduced for testing
   min_market_cap: 100000000000  # $100B+ (irrelevant for ETFs but keeping)
   
   # Options filters (ultra-liquid for indices)
