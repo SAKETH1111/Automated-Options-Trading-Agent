@@ -16,9 +16,9 @@ from src.market_data.iv_calculator import IVCalculator
 try:
     from src.market_data.polygon_options import PolygonOptionsClient
     POLYGON_AVAILABLE = True
-except:
+except Exception as e:
     POLYGON_AVAILABLE = False
-    logger.warning("Polygon not available - using simulated options data")
+    logger.warning(f"Polygon not available - using simulated options data. Error: {e}")
 
 
 class MarketDataCollector:
