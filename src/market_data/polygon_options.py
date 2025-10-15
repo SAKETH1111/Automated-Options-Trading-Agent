@@ -85,58 +85,88 @@ class PolygonOptionsClient:
         option_ticker: str
     ) -> Optional[Dict]:
         """
-        Get real-time snapshot of an option contract
-        Includes: Greeks, IV, Open Interest, Last Price
+        Get real-time snapshot of an option contract from Polygon
+        Includes: Real Greeks, IV, Open Interest, Last Price
         
         Args:
             option_ticker: Option ticker (e.g., 'O:GDX251219P00080000')
             
         Returns:
-            Dict with option data including Greeks
+            Dict with real option data including Greeks
         """
         try:
-            logger.debug(f"Fetching snapshot for {option_ticker}")
+            logger.debug(f"Fetching REAL snapshot for {option_ticker}")
             
-            # For now, return simulated data since Polygon snapshots are complex
-            # This will allow us to test the strategy logic
-            import random
+            # Extract underlying and option details from ticker
+            # Format: O:GDX251219P00080000 -> GDX, 2025-12-19, P, 80.00
+            ticker_parts = option_ticker.split(':')[1] if ':' in option_ticker else option_ticker
+            underlying = ticker_parts[:3]
             
-            # Extract underlying from ticker (e.g., 'O:GDX251219P00080000' -> 'GDX')
-            underlying = option_ticker.split(':')[1][:3]
-            
-            # Simulate realistic option data
-            bid = round(random.uniform(0.10, 5.00), 2)
-            ask = round(bid + random.uniform(0.05, 0.50), 2)
-            mid = (bid + ask) / 2
-            
-            # Simulate Greeks
-            delta = round(random.uniform(-0.50, -0.10), 3)  # Put delta
-            gamma = round(random.uniform(0.001, 0.01), 4)
-            theta = round(random.uniform(-0.05, -0.01), 3)
-            vega = round(random.uniform(0.01, 0.10), 3)
-            
-            data = {
-                'ticker': option_ticker,
-                'last_price': mid,
-                'bid': bid,
-                'ask': ask,
-                'volume': random.randint(10, 1000),
-                'open_interest': random.randint(100, 5000),
-                'implied_volatility': round(random.uniform(0.20, 0.80), 3),
-                'greeks': {
-                    'delta': delta,
-                    'gamma': gamma,
-                    'theta': theta,
-                    'vega': vega,
-                },
-                'timestamp': datetime.now()
-            }
-            
-            logger.debug(f"Generated snapshot for {option_ticker}: bid={bid}, ask={ask}, delta={delta}")
-            return data
+            # Get real options snapshot from Polygon
+            try:
+                snapshot = self.client.get_snapshot_option(
+                    underlying_asset=underlying,
+                    option_contract=option_ticker
+                )
+                
+                if not snapshot:
+                    logger.debug(f"No snapshot data for {option_ticker}")
+                    return None
+                
+                # Extract real market data
+                last_quote = snapshot.last_quote if hasattr(snapshot, 'last_quote') else None
+                day_data = snapshot.day if hasattr(snapshot, 'day') else None
+                
+                # Real bid/ask prices
+                bid = float(last_quote.bid) if last_quote and last_quote.bid else 0.0
+                ask = float(last_quote.ask) if last_quote and last_quote.ask else 0.0
+                last_price = float(last_quote.last) if last_quote and last_quote.last else (bid + ask) / 2 if bid and ask else 0.0
+                
+                # Real volume and open interest
+                volume = int(day_data.volume) if day_data and day_data.volume else 0
+                open_interest = int(snapshot.open_interest) if hasattr(snapshot, 'open_interest') and snapshot.open_interest else 0
+                
+                # Real implied volatility
+                iv = float(snapshot.implied_volatility) if hasattr(snapshot, 'implied_volatility') and snapshot.implied_volatility else None
+                
+                # Real Greeks from Polygon
+                greeks = {}
+                if hasattr(snapshot, 'greeks') and snapshot.greeks:
+                    greeks = {
+                        'delta': float(snapshot.greeks.delta) if snapshot.greeks.delta else None,
+                        'gamma': float(snapshot.greeks.gamma) if snapshot.greeks.gamma else None,
+                        'theta': float(snapshot.greeks.theta) if snapshot.greeks.theta else None,
+                        'vega': float(snapshot.greeks.vega) if snapshot.greeks.vega else None,
+                        'rho': float(snapshot.greeks.rho) if snapshot.greeks.rho else None,
+                    }
+                
+                # Validate data quality
+                if not bid or not ask or (ask - bid) <= 0:
+                    logger.debug(f"Invalid bid/ask for {option_ticker}: bid={bid}, ask={ask}")
+                    return None
+                
+                data = {
+                    'ticker': option_ticker,
+                    'last_price': last_price,
+                    'bid': bid,
+                    'ask': ask,
+                    'volume': volume,
+                    'open_interest': open_interest,
+                    'implied_volatility': iv,
+                    'greeks': greeks,
+                    'timestamp': datetime.now(),
+                    'data_source': 'polygon_real'
+                }
+                
+                logger.debug(f"REAL snapshot for {option_ticker}: bid={bid}, ask={ask}, delta={greeks.get('delta', 'N/A')}")
+                return data
+                
+            except Exception as api_error:
+                logger.warning(f"Polygon API error for {option_ticker}: {api_error}")
+                return None
             
         except Exception as e:
-            logger.error(f"Error fetching option snapshot for {option_ticker}: {e}")
+            logger.error(f"Error fetching real option snapshot for {option_ticker}: {e}")
             return None
     
     def get_options_chain_with_greeks(

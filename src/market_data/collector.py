@@ -197,11 +197,15 @@ class MarketDataCollector:
                 if not (-5 <= dte <= 60):  # Accept -5 to 60 DTE for testing (include some expired)
                     continue
                 
-                # Get option snapshot for pricing
+                # Rate limiting for Polygon API (5 calls per second max)
+                import time
+                time.sleep(0.2)  # 200ms between calls
+                
+                # Get REAL option snapshot for pricing
                 snapshot = self.polygon.get_option_snapshot(contract['ticker'])
                 
                 if not snapshot:
-                    logger.debug(f"No snapshot for {contract['ticker']}")
+                    logger.debug(f"No real snapshot data for {contract['ticker']}")
                     continue
                 
                 bid = snapshot.get('bid', 0)
@@ -267,8 +271,8 @@ class MarketDataCollector:
             return enriched_options
         
         except Exception as e:
-            logger.error(f"Error loading Polygon options: {e}")
-            return self._get_simulated_options(symbol, stock_price, target_dte, option_type)
+            logger.error(f"Error loading real Polygon options: {e}")
+            return []  # Return empty list - no simulated data for real trading
     
     def _get_simulated_options(
         self,
