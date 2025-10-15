@@ -96,18 +96,25 @@ class SignalGenerator:
                         continue
                     
                     # Generate signals from each strategy
+                    logger.debug(f"Analyzing {len(options_chain)} options contracts for {symbol}")
                     for strategy_name, strategy in self.strategies.items():
                         try:
+                            logger.debug(f"Running {strategy_name} strategy for {symbol}")
                             signals = strategy.generate_signals(
                                 symbol, stock_data, options_chain
                             )
                             
+                            logger.debug(f"{strategy_name} returned {len(signals) if signals else 0} signals")
                             if signals:
                                 logger.info(f"Generated {len(signals)} {strategy_name} signals for {symbol}")
                                 all_signals.extend([s.to_dict() for s in signals])
+                            else:
+                                logger.debug(f"No signals from {strategy_name} for {symbol}")
                         
                         except Exception as e:
                             logger.error(f"Error generating signals from {strategy_name} for {symbol}: {e}")
+                            import traceback
+                            logger.error(f"Traceback: {traceback.format_exc()}")
                 
                 except Exception as e:
                     logger.error(f"Error scanning {symbol}: {e}")
