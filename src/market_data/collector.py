@@ -176,6 +176,16 @@ class MarketDataCollector:
                 option_type=option_type
             )
             
+            logger.debug(f"Polygon returned {len(contracts)} contracts for {symbol}")
+            
+            # Debug: show available DTE ranges
+            dte_counts = {}
+            for contract in contracts[:20]:  # Check first 20 contracts
+                exp_date = datetime.strptime(contract['expiration_date'], '%Y-%m-%d')
+                dte = (exp_date - datetime.now()).days
+                dte_counts[dte] = dte_counts.get(dte, 0) + 1
+            logger.debug(f"Available DTE ranges: {sorted(dte_counts.keys())}")
+            
             enriched_options = []
             
             for contract in contracts:
@@ -183,8 +193,8 @@ class MarketDataCollector:
                 exp_date = datetime.strptime(contract['expiration_date'], '%Y-%m-%d')
                 dte = (exp_date - datetime.now()).days
                 
-                # Filter by DTE range
-                if not (target_dte - 10 <= dte <= target_dte + 10):
+                # Filter by DTE range - be more lenient
+                if not (target_dte - 15 <= dte <= target_dte + 15):
                     continue
                 
                 # Get option snapshot for pricing
