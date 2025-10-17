@@ -1,19 +1,14 @@
 """
-Backtesting Module
-Provides backtesting engine, performance metrics, and strategy testing
+Professional Backtesting & Validation Module
+Institutional-grade backtesting with realistic execution simulation
 """
 
-from .engine import BacktestEngine
-from .metrics import PerformanceMetrics
-from .strategy_tester import StrategyTester
-from .optimizer import ParameterOptimizer
-from .reporter import BacktestReporter
+from .options_backtest_v2 import OptionsBacktestV2
+from .performance_attribution import OptionsPerformanceAttribution
+from .transaction_cost_analysis import TransactionCostAnalysis
 
 __all__ = [
-    'BacktestEngine',
-    'PerformanceMetrics',
-    'StrategyTester',
-    'ParameterOptimizer',
-    'BacktestReporter'
+    'OptionsBacktestV2',
+    'OptionsPerformanceAttribution',
+    'TransactionCostAnalysis'
 ]
-

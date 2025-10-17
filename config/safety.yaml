@@ -1,0 +1,353 @@
+# Safety Systems Configuration
+# Comprehensive circuit breakers and risk management for institutional trading
+
+# PDT Compliance Settings
+pdt_compliance:
+  enabled: true
+  max_day_trades: 3
+  rolling_window_days: 5
+  strict_mode: true  # Strictly avoid day trades
+  emergency_allowance: true  # Allow day trades only for circuit breakers
+  hold_period_hours: 16  # Minimum hold period (overnight + buffer)
+  violation_penalty: "TRADING_HALT"  # Options: WARNING, POSITION_LIMIT, TRADING_HALT
+
+# Circuit Breakers Configuration
+circuit_breakers:
+  # Position Level Circuit Breakers
+  position_level:
+    enabled: true
+    stop_loss_multiplier: 2.0  # Stop loss at 2x credit received
+    take_profit_percentage: 50  # Take profit at 50% max profit
+    max_loss_per_trade: 300  # Max $300 loss per trade for small account
+    max_gain_per_trade: 1000  # Max $1000 gain per trade (take profit)
+    time_based_exit:
+      enabled: true
+      max_hold_days: 45  # Maximum position hold period
+      decay_factor: 0.95  # Reduce profit target over time
+    volatility_adjustment:
+      enabled: true
+      vix_threshold: 25  # Adjust stops when VIX > 25
+      vix_multiplier: 1.5  # Increase stop loss by 50% in high vol
+      
+  # Strategy Level Circuit Breakers
+  strategy_level:
+    enabled: true
+    consecutive_losses_limit: 3
+    pause_duration_hours: 24
+    max_daily_trades_per_strategy: 5
+    win_rate_threshold: 0.40  # Pause strategy if win rate < 40%
+    min_trades_for_evaluation: 10
+    performance_decay_threshold: 0.15  # Pause if performance drops 15%
+    
+  # Portfolio Level Circuit Breakers
+  portfolio_level:
+    enabled: true
+    daily_loss_limit_percent: 3.0  # 3% daily loss limit
+    weekly_loss_limit_percent: 8.0  # 8% weekly loss limit
+    monthly_loss_limit_percent: 15.0  # 15% monthly loss limit
+    max_portfolio_heat: 0.15  # 15% portfolio heat
+    max_correlation_exposure: 0.7  # Max 70% correlation exposure
+    max_sector_exposure: 0.5  # Max 50% exposure to any sector
+    drawdown_protection:
+      enabled: true
+      max_drawdown_percent: 20.0
+      recovery_threshold: 0.05  # Reduce size after 5% recovery
+      
+  # System Level Circuit Breakers
+  system_level:
+    enabled: true
+    api_error_threshold: 10  # Max 10 API errors per hour
+    data_latency_threshold_ms: 5000  # Max 5 second data latency
+    memory_usage_threshold_percent: 90  # Max 90% memory usage
+    cpu_usage_threshold_percent: 95  # Max 95% CPU usage
+    disk_usage_threshold_percent: 85  # Max 85% disk usage
+    network_latency_threshold_ms: 1000  # Max 1 second network latency
+    database_connection_threshold: 80  # Max 80% DB connection usage
+
+# Position Limits Configuration
+position_limits:
+  # Account Tier Specific Limits
+  account_tiers:
+    micro:  # $0 - $2,500
+      max_positions: 2
+      max_risk_per_trade: 100
+      max_total_risk: 200
+      strategies: ["bull_put_spread", "cash_secured_put"]
+      min_account_for_trading: 1000
+      
+    small:  # $2,500 - $25,000
+      max_positions: 3
+      max_risk_per_trade: 300
+      max_total_risk: 750
+      strategies: ["bull_put_spread", "cash_secured_put", "bear_call_spread"]
+      min_account_for_trading: 2500
+      
+    medium:  # $25,000 - $100,000
+      max_positions: 5
+      max_risk_per_trade: 1000
+      max_total_risk: 5000
+      strategies: ["bull_put_spread", "cash_secured_put", "bear_call_spread", "iron_condor"]
+      min_account_for_trading: 25000
+      
+    large:  # $100,000 - $1,000,000
+      max_positions: 10
+      max_risk_per_trade: 5000
+      max_total_risk: 50000
+      strategies: ["all"]
+      min_account_for_trading: 100000
+      
+    institutional:  # $1,000,000+
+      max_positions: 20
+      max_risk_per_trade: 25000
+      max_total_risk: 250000
+      strategies: ["all"]
+      min_account_for_trading: 1000000
+
+  # Symbol Specific Limits
+  symbol_limits:
+    SPY:
+      max_positions: 2
+      max_risk_per_symbol: 500
+      min_volume: 1000
+      max_bid_ask_spread_percent: 3.0
+      
+    QQQ:
+      max_positions: 2
+      max_risk_per_symbol: 500
+      min_volume: 1000
+      max_bid_ask_spread_percent: 3.0
+      
+    IWM:
+      max_positions: 1
+      max_risk_per_symbol: 300
+      min_volume: 500
+      max_bid_ask_spread_percent: 5.0
+
+  # Strategy Specific Limits
+  strategy_limits:
+    bull_put_spread:
+      max_positions: 3
+      max_risk_per_strategy: 900
+      min_dte: 14
+      max_dte: 45
+      
+    cash_secured_put:
+      max_positions: 2
+      max_risk_per_strategy: 600
+      min_dte: 30
+      max_dte: 60
+      
+    bear_call_spread:
+      max_positions: 2
+      max_risk_per_strategy: 600
+      min_dte: 14
+      max_dte: 45
+      
+    iron_condor:
+      max_positions: 1
+      max_risk_per_strategy: 500
+      min_dte: 21
+      max_dte: 45
+
+# Risk Management Configuration
+risk_management:
+  # Value at Risk (VaR) Configuration
+  var:
+    enabled: true
+    confidence_level: 0.95
+    time_horizon_days: 1
+    method: "historical_simulation"  # Options: historical_simulation, monte_carlo, parametric
+    max_var_percent: 5.0  # Max 5% VaR of portfolio
+    lookback_period_days: 252  # 1 year of historical data
+    
+  # Conditional Value at Risk (CVaR)
+  cvar:
+    enabled: true
+    confidence_level: 0.95
+    max_cvar_percent: 8.0  # Max 8% CVaR of portfolio
+    
+  # Greeks Limits
+  greeks_limits:
+    enabled: true
+    max_delta: 50  # Max 50 delta exposure
+    max_gamma: 10  # Max 10 gamma exposure
+    max_theta: -100  # Max -100 theta (time decay)
+    max_vega: 500  # Max 500 vega exposure
+    max_rho: 50  # Max 50 rho exposure
+    
+  # Liquidity Requirements
+  liquidity:
+    enabled: true
+    min_volume: 100  # Minimum daily volume
+    max_bid_ask_spread_percent: 5.0  # Max 5% bid-ask spread
+    min_open_interest: 50  # Minimum open interest
+    max_position_size_percent: 0.1  # Max 10% of daily volume
+    
+  # Correlation Limits
+  correlation:
+    enabled: true
+    max_correlation_threshold: 0.7  # Max 70% correlation
+    correlation_period_days: 60  # 60-day correlation window
+    max_correlated_positions: 3  # Max 3 correlated positions
+
+# Market Condition Adjustments
+market_conditions:
+  # VIX Based Adjustments
+  vix_adjustments:
+    low_vol:  # VIX < 15
+      position_size_multiplier: 1.2
+      stop_loss_multiplier: 1.0
+      take_profit_multiplier: 1.0
+      
+    normal_vol:  # VIX 15-25
+      position_size_multiplier: 1.0
+      stop_loss_multiplier: 1.0
+      take_profit_multiplier: 1.0
+      
+    high_vol:  # VIX > 25
+      position_size_multiplier: 0.8
+      stop_loss_multiplier: 1.5
+      take_profit_multiplier: 0.8
+      
+  # Market Regime Adjustments
+  regime_adjustments:
+    bull_market:
+      position_size_multiplier: 1.1
+      strategy_preference: ["bull_put_spread", "cash_secured_put"]
+      
+    bear_market:
+      position_size_multiplier: 0.9
+      strategy_preference: ["bear_call_spread", "iron_condor"]
+      
+    sideways_market:
+      position_size_multiplier: 1.0
+      strategy_preference: ["iron_condor", "calendar_spread"]
+
+# Emergency Procedures
+emergency_procedures:
+  # Flash Crash Protection
+  flash_crash:
+    enabled: true
+    price_drop_threshold_percent: 5.0  # 5% price drop in 5 minutes
+    time_window_minutes: 5
+    action: "HALT_TRADING"  # Options: HALT_TRADING, REDUCE_SIZE, CLOSE_POSITIONS
+    
+  # Liquidity Crisis
+  liquidity_crisis:
+    enabled: true
+    spread_threshold_percent: 10.0  # 10% bid-ask spread
+    volume_threshold_percent: 0.5  # 50% below average volume
+    action: "AVOID_NEW_POSITIONS"
+    
+  # System Failures
+  system_failures:
+    api_failure:
+      max_consecutive_failures: 5
+      action: "HALT_TRADING"
+      
+    data_feed_failure:
+      max_consecutive_failures: 3
+      action: "HALT_TRADING"
+      
+    database_failure:
+      max_consecutive_failures: 2
+      action: "HALT_TRADING"
+
+# Alert Configuration
+alerts:
+  # Alert Thresholds
+  thresholds:
+    position_loss_percent: 50  # Alert when position loses 50%
+    daily_loss_percent: 2.0  # Alert when daily loss > 2%
+    weekly_loss_percent: 5.0  # Alert when weekly loss > 5%
+    monthly_loss_percent: 10.0  # Alert when monthly loss > 10%
+    drawdown_percent: 15.0  # Alert when drawdown > 15%
+    
+  # Alert Channels
+  channels:
+    critical:
+      email: true
+      sms: true
+      telegram: true
+      rate_limit_minutes: 15
+      
+    high:
+      email: true
+      telegram: true
+      rate_limit_minutes: 60
+      
+    normal:
+      telegram: true
+      rate_limit_minutes: 240
+      
+  # Alert Types
+  alert_types:
+    pdt_violation:
+      severity: "critical"
+      channels: ["email", "sms", "telegram"]
+      
+    circuit_breaker_triggered:
+      severity: "high"
+      channels: ["email", "telegram"]
+      
+    position_limit_exceeded:
+      severity: "high"
+      channels: ["email", "telegram"]
+      
+    system_error:
+      severity: "critical"
+      channels: ["email", "sms", "telegram"]
+      
+    daily_summary:
+      severity: "normal"
+      channels: ["telegram"]
+
+# Compliance and Audit
+compliance:
+  # Regulatory Compliance
+  regulatory:
+    pdt_rule: true
+    margin_requirements: true
+    wash_sale_rule: true
+    tax_reporting: true
+    
+  # Audit Trail
+  audit_trail:
+    enabled: true
+    log_all_trades: true
+    log_all_decisions: true
+    log_all_alerts: true
+    retention_days: 2555  # 7 years
+    
+  # Reporting
+  reporting:
+    daily_summary: true
+    weekly_analysis: true
+    monthly_report: true
+    quarterly_review: true
+    annual_audit: true
+
+# Testing and Validation
+testing:
+  # Backtesting
+  backtesting:
+    enabled: true
+    min_period_days: 252  # 1 year minimum
+    max_period_days: 1260  # 5 years maximum
+    walk_forward: true
+    out_of_sample_percent: 20
+    
+  # Paper Trading
+  paper_trading:
+    enabled: true
+    min_trades: 50
+    min_period_days: 14
+    max_drawdown_percent: 10
+    min_sharpe_ratio: 1.5
+    
+  # Live Trading Validation
+  live_validation:
+    min_trades: 20
+    min_period_days: 7
+    max_drawdown_percent: 5
+    min_win_rate: 0.60

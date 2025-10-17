@@ -1,0 +1,399 @@
+# Production Configuration for Institutional Options Trading System
+# DigitalOcean VPS Deployment with PDT Compliance
+
+# Environment Settings
+environment: production
+debug: false
+log_level: INFO
+
+# Trading Mode Configuration
+trading_mode: paper  # Options: paper, live
+account_type: small  # Options: micro, small, medium, large, institutional
+account_value: 5000  # Starting account value in USD
+
+# PDT Compliance Settings
+pdt_compliance:
+  enabled: true
+  max_day_trades: 3
+  rolling_window_days: 5
+  strict_mode: true  # Strictly avoid day trades, hold overnight
+  emergency_allowance: true  # Allow day trades only for circuit breakers
+  hold_period_hours: 16  # Minimum hold period (overnight + buffer)
+
+# Polygon API Configuration
+polygon:
+  api_key: "${POLYGON_API_KEY}"
+  base_url: "https://api.polygon.io"
+  s3_access_key: "${POLYGON_S3_ACCESS_KEY}"
+  s3_secret_key: "${POLYGON_S3_SECRET_KEY}"
+  s3_bucket: "polygon-market-data"
+  s3_region: "us-east-1"
+  
+  # WebSocket Configuration
+  websocket:
+    enabled: true
+    reconnect_attempts: 10
+    reconnect_delay: 5
+    heartbeat_interval: 30
+    
+  # Data Feeds
+  feeds:
+    options_quotes: true
+    options_trades: true
+    stocks_quotes: true
+    stocks_trades: true
+    forex_quotes: true
+    crypto_quotes: true
+    
+  # Rate Limiting
+  rate_limits:
+    requests_per_minute: 5000
+    requests_per_second: 100
+    
+# DigitalOcean VPS Configuration
+vps:
+  host: "${VPS_HOST}"
+  port: 22
+  username: "${VPS_USERNAME}"
+  ssh_key_path: "${SSH_KEY_PATH}"
+  docker_registry: "${DOCKER_REGISTRY}"
+  
+# Database Configuration
+database:
+  postgresql:
+    host: "postgres"
+    port: 5432
+    database: "trading_agent"
+    username: "trading_user"
+    password: "${POSTGRES_PASSWORD}"
+    pool_size: 20
+    max_overflow: 30
+    pool_timeout: 30
+    pool_recycle: 3600
+    
+  redis:
+    host: "redis"
+    port: 6379
+    password: "${REDIS_PASSWORD}"
+    db: 0
+    max_connections: 50
+    
+# Safety Systems Configuration
+safety:
+  # Circuit Breakers
+  circuit_breakers:
+    position_level:
+      stop_loss_multiplier: 2.0  # Stop loss at 2x credit received
+      take_profit_percentage: 50  # Take profit at 50% max profit
+      max_loss_per_trade: 300  # Max $300 loss per trade for small account
+      
+    strategy_level:
+      consecutive_losses_limit: 3
+      pause_duration_hours: 24
+      max_daily_trades: 5
+      
+    portfolio_level:
+      daily_loss_limit_percent: 3.0  # 3% daily loss limit
+      max_portfolio_heat: 0.15  # 15% portfolio heat
+      max_correlation_exposure: 0.7
+      
+    system_level:
+      api_error_threshold: 10
+      data_latency_threshold_ms: 5000
+      memory_usage_threshold_percent: 90
+      cpu_usage_threshold_percent: 95
+      
+  # Position Limits
+  position_limits:
+    max_simultaneous_positions: 3  # Reduced for small account
+    max_risk_per_position_percent: 6.0  # 6% max risk per position
+    max_total_risk_percent: 15.0  # 15% total portfolio risk
+    
+  # Account Tier Specific Limits
+  account_tiers:
+    micro:  # $0 - $2,500
+      max_positions: 2
+      max_risk_per_trade: 100
+      strategies: ["bull_put_spread", "cash_secured_put"]
+      
+    small:  # $2,500 - $25,000
+      max_positions: 3
+      max_risk_per_trade: 300
+      strategies: ["bull_put_spread", "cash_secured_put", "bear_call_spread"]
+      
+    medium:  # $25,000 - $100,000
+      max_positions: 5
+      max_risk_per_trade: 1000
+      strategies: ["bull_put_spread", "cash_secured_put", "bear_call_spread", "iron_condor"]
+      
+    large:  # $100,000 - $1,000,000
+      max_positions: 10
+      max_risk_per_trade: 5000
+      strategies: ["all"]
+      
+    institutional:  # $1,000,000+
+      max_positions: 20
+      max_risk_per_trade: 25000
+      strategies: ["all"]
+
+# Strategy Configuration
+strategies:
+  # SPY/QQQ Bull Put Spread Strategy
+  bull_put_spread:
+    enabled: true
+    symbols: ["SPY", "QQQ"]
+    min_dte: 14
+    max_dte: 45
+    min_prob_otm: 0.70
+    max_credit_risk: 300
+    target_profit_percent: 50
+    stop_loss_multiplier: 2.0
+    
+  # Cash Secured Put Strategy
+  cash_secured_put:
+    enabled: true
+    symbols: ["SPY", "QQQ"]
+    min_dte: 30
+    max_dte: 60
+    min_prob_otm: 0.75
+    max_assignment_risk: 300
+    target_profit_percent: 50
+    
+  # Bear Call Spread Strategy
+  bear_call_spread:
+    enabled: false  # Disabled for small account initially
+    symbols: ["SPY", "QQQ"]
+    min_dte: 14
+    max_dte: 45
+    min_prob_otm: 0.70
+    max_credit_risk: 300
+
+# Machine Learning Configuration
+ml:
+  # Model Training
+  training:
+    retrain_frequency_days: 7
+    min_training_samples: 1000
+    validation_split: 0.2
+    test_split: 0.1
+    
+  # Feature Engineering
+  features:
+    lookback_periods: [5, 10, 20, 50, 100]
+    volatility_periods: [10, 20, 30, 60]
+    correlation_periods: [20, 60, 120]
+    
+  # Model Configuration
+  models:
+    lstm_volatility:
+      sequence_length: 60
+      hidden_units: 128
+      dropout: 0.2
+      learning_rate: 0.001
+      
+    transformer_price:
+      d_model: 256
+      n_heads: 8
+      n_layers: 6
+      dropout: 0.1
+      learning_rate: 0.0001
+      
+    ensemble:
+      base_models: ["xgboost", "lightgbm", "random_forest", "lstm"]
+      meta_learner: "linear_regression"
+      cv_folds: 5
+
+# Risk Management Configuration
+risk_management:
+  # Value at Risk (VaR)
+  var:
+    confidence_level: 0.95
+    time_horizon_days: 1
+    method: "historical_simulation"
+    
+  # Greeks Limits
+  greeks_limits:
+    max_delta: 50
+    max_gamma: 10
+    max_theta: -100
+    max_vega: 500
+    
+  # Liquidity Requirements
+  liquidity:
+    min_volume: 100
+    max_bid_ask_spread_percent: 5.0
+    min_open_interest: 50
+
+# Monitoring and Alerting
+monitoring:
+  # Alert Channels
+  alerts:
+    email:
+      enabled: true
+      smtp_server: "${SMTP_SERVER}"
+      smtp_port: 587
+      username: "${EMAIL_USERNAME}"
+      password: "${EMAIL_PASSWORD}"
+      to_addresses: ["${ALERT_EMAIL}"]
+      
+    sms:
+      enabled: true
+      twilio_account_sid: "${TWILIO_ACCOUNT_SID}"
+      twilio_auth_token: "${TWILIO_AUTH_TOKEN}"
+      twilio_phone_number: "${TWILIO_PHONE_NUMBER}"
+      to_phone_numbers: ["${ALERT_PHONE}"]
+      
+    telegram:
+      enabled: true
+      bot_token: "${TELEGRAM_BOT_TOKEN}"
+      chat_id: "${TELEGRAM_CHAT_ID}"
+      
+    slack:
+      enabled: false  # Disabled for initial deployment
+      webhook_url: "${SLACK_WEBHOOK_URL}"
+      
+  # Alert Types
+  alert_types:
+    critical:
+      channels: ["email", "sms", "telegram"]
+      rate_limit_minutes: 15
+      
+    high:
+      channels: ["email", "telegram"]
+      rate_limit_minutes: 60
+      
+    normal:
+      channels: ["telegram"]
+      rate_limit_minutes: 240
+      
+  # Metrics Collection
+  metrics:
+    prometheus:
+      enabled: true
+      port: 9090
+      
+    grafana:
+      enabled: true
+      port: 3000
+      
+    retention_days: 90
+
+# Execution Configuration
+execution:
+  # Order Management
+  order_management:
+    max_retry_attempts: 3
+    retry_delay_seconds: 5
+    timeout_seconds: 30
+    
+  # Smart Order Routing
+  smart_routing:
+    enabled: true
+    preferred_exchanges: ["NASDAQ", "NYSE", "AMEX"]
+    min_size_improvement: 0.01
+    
+  # Transaction Costs
+  transaction_costs:
+    commission_per_contract: 0.65
+    regulatory_fees: 0.000119
+    exchange_fees: 0.0001
+
+# Performance Tracking
+performance:
+  # Metrics Calculation
+  metrics:
+    sharpe_ratio:
+      risk_free_rate: 0.02
+      rolling_window_days: 30
+      
+    max_drawdown:
+      rolling_window_days: 252
+      
+    win_rate:
+      rolling_window_days: 30
+      
+  # Reporting
+  reporting:
+    daily_summary: true
+    weekly_analysis: true
+    monthly_report: true
+    performance_attribution: true
+
+# Security Configuration
+security:
+  # API Security
+  api_security:
+    rate_limiting:
+      enabled: true
+      requests_per_minute: 1000
+      
+    authentication:
+      enabled: true
+      jwt_secret: "${JWT_SECRET}"
+      token_expiry_hours: 24
+      
+  # Data Encryption
+  encryption:
+    enabled: true
+    algorithm: "AES-256-GCM"
+    key: "${ENCRYPTION_KEY}"
+
+# Backup and Recovery
+backup:
+  # Database Backup
+  database:
+    enabled: true
+    frequency: "daily"
+    retention_days: 30
+    backup_location: "/opt/backups"
+    
+  # Model Backup
+  models:
+    enabled: true
+    frequency: "weekly"
+    retention_weeks: 12
+    
+  # Configuration Backup
+  config:
+    enabled: true
+    frequency: "daily"
+    retention_days: 90
+
+# Deployment Configuration
+deployment:
+  # Docker Configuration
+  docker:
+    registry: "${DOCKER_REGISTRY}"
+    image_tag: "latest"
+    pull_policy: "always"
+    
+  # Health Checks
+  health_checks:
+    enabled: true
+    interval_seconds: 30
+    timeout_seconds: 10
+    failure_threshold: 3
+    
+  # Auto-scaling
+  auto_scaling:
+    enabled: false  # Disabled for VPS deployment
+    min_replicas: 1
+    max_replicas: 3
+    cpu_threshold: 80
+    memory_threshold: 85
+
+# Development and Testing
+development:
+  # Paper Trading
+  paper_trading:
+    enabled: true
+    initial_balance: 5000
+    commission_simulation: true
+    slippage_simulation: true
+    
+  # Testing
+  testing:
+    unit_tests: true
+    integration_tests: true
+    performance_tests: true
+    backtest_validation: true
