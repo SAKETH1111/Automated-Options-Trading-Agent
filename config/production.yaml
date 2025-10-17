@@ -20,6 +20,32 @@ pdt_compliance:
   emergency_allowance: true  # Allow day trades only for circuit breakers
   hold_period_hours: 16  # Minimum hold period (overnight + buffer)
 
+# Alpaca Broker Configuration
+broker:
+  name: alpaca
+  api_key: "${ALPACA_API_KEY}"
+  secret_key: "${ALPACA_SECRET_KEY}"
+  paper_trading: true  # Switch to false for live trading
+  base_url: "https://paper-api.alpaca.markets"
+  data_url: "https://data.alpaca.markets"
+  stream_url: "wss://paper-api.alpaca.markets/stream"
+  commission_per_contract: 0.65
+  regulatory_fees: 0.000119
+  
+  # Options Trading Settings
+  options:
+    enabled: true
+    min_account_value: 2000  # Minimum for options approval
+    day_trading_required: 25000  # PDT threshold
+    margin_requirement: 0.25  # 25% margin for short options
+    
+  # Order Management
+  order_management:
+    default_time_in_force: "day"
+    max_order_size: 100  # Max contracts per order
+    order_timeout: 30  # seconds
+    retry_attempts: 3
+
 # Polygon API Configuration
 polygon:
   api_key: "${POLYGON_API_KEY}"
@@ -298,20 +324,42 @@ execution:
     regulatory_fees: 0.000119
     exchange_fees: 0.0001
 
-# Performance Tracking
+# Performance Tracking (Updated with Realistic Targets)
 performance:
-  # Metrics Calculation
+  # Metrics Calculation - Realistic Industry Standards
   metrics:
     sharpe_ratio:
+      target: 1.0  # Reduced from 1.5 to realistic target
+      minimum: 0.8
       risk_free_rate: 0.02
       rolling_window_days: 30
       
     max_drawdown:
+      target: 15.0  # Increased from 10% to realistic tolerance
+      maximum: 20.0
       rolling_window_days: 252
       
     win_rate:
+      target: 55.0  # Reduced from 65% to industry standard
+      minimum: 50.0
       rolling_window_days: 30
       
+    monthly_return:
+      target: 3.0  # Reduced from 5-10% to sustainable target
+      minimum: 1.0
+      maximum: 8.0
+      
+    profit_factor:
+      target: 1.3
+      minimum: 1.1
+      
+  # Transaction Costs (Realistic)
+  transaction_costs:
+    commission_per_contract: 0.65
+    regulatory_fees: 0.000119
+    estimated_slippage_percent: 8.0  # 5-10% realistic slippage
+    bid_ask_spread_percent: 3.0  # Typical for liquid options
+    
   # Reporting
   reporting:
     daily_summary: true

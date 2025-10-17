@@ -269,3 +269,4 @@ if __name__ == "__main__":
         print(f"Risk per Trade: {adaptation.get_position_limits()['risk_per_trade']:.1%}")
         print(f"Options Criteria: {adaptation.get_options_criteria()}")
 
+

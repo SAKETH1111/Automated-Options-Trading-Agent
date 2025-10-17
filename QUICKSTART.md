@@ -276,3 +276,4 @@ tail -f logs/trading_agent.log
 
 
 
+
